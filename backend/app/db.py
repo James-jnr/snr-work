@@ -5,7 +5,9 @@ import sqlite3
 import threading
 import time
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from . import config
 
@@ -34,6 +36,12 @@ CREATE TABLE IF NOT EXISTS alerts (
 CREATE INDEX IF NOT EXISTS ix_alerts_created ON alerts(created_at);
 CREATE INDEX IF NOT EXISTS ix_alerts_kind    ON alerts(kind, symbol);
 CREATE INDEX IF NOT EXISTS ix_alerts_saved   ON alerts(saved);
+CREATE TABLE IF NOT EXISTS story_status (
+    symbol TEXT NOT NULL, tf TEXT NOT NULL, dir TEXT NOT NULL, eff INTEGER NOT NULL,
+    status TEXT NOT NULL,                   -- verified | rejected  (no row = unverified)
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (symbol, tf, dir, eff)
+);
 """
 
 _init_lock = threading.Lock()
@@ -61,6 +69,9 @@ def init():
         try:
             c.execute("PRAGMA journal_mode=WAL")   # reader and writer don't block each other
             c.executescript(SCHEMA)
+            cols = {r[1] for r in c.execute("PRAGMA table_info(alerts)")}
+            if "taken" not in cols:                       # added in v3: "I took this trade"
+                c.execute("ALTER TABLE alerts ADD COLUMN taken INTEGER NOT NULL DEFAULT 0")
             c.commit()
         finally:
             c.close()
@@ -179,10 +190,80 @@ def set_notes(alert_id: int, notes: Optional[str], outcome: Optional[str]) -> bo
         return cur.rowcount > 0
 
 
+def set_taken(alert_id: int, taken: bool) -> bool:
+    _ensure()
+    with _conn() as c:
+        cur = c.execute("UPDATE alerts SET taken=? WHERE id=?", (1 if taken else 0, alert_id))
+        return cur.rowcount > 0
+
+
+STORY_STATUSES = ("unverified", "verified", "rejected")
+
+
+def set_story_status(symbol: str, tf: str, direction: str, eff: int, status: str) -> None:
+    """Your decision on a story line. 'unverified' removes your mark."""
+    _ensure()
+    if status not in STORY_STATUSES:
+        raise ValueError(f"status must be one of {STORY_STATUSES}")
+    with _conn() as c:
+        if status == "unverified":
+            c.execute("DELETE FROM story_status WHERE symbol=? AND tf=? AND dir=? AND eff=?",
+                      (symbol, tf, direction, int(eff)))
+        else:
+            c.execute("INSERT OR REPLACE INTO story_status (symbol, tf, dir, eff, status, updated_at)"
+                      " VALUES (?,?,?,?,?,?)", (symbol, tf, direction, int(eff), status, int(time.time())))
+
+
+def story_statuses(symbol: str = "") -> Dict[str, str]:
+    """{'SYMBOL|tf|dir|eff': 'verified'|'rejected'}; story lines not listed are unverified."""
+    _ensure()
+    with _conn() as c:
+        rows = c.execute("SELECT * FROM story_status" + (" WHERE symbol=?" if symbol else ""),
+                         [symbol] if symbol else []).fetchall()
+    return {f"{r['symbol']}|{r['tf']}|{r['dir']}|{r['eff']}": r["status"] for r in rows}
+
+
+def rejected_storylines(symbol: str):
+    _ensure()
+    with _conn() as c:
+        return {(r["tf"], r["dir"], int(r["eff"])) for r in c.execute(
+            "SELECT tf, dir, eff FROM story_status WHERE symbol=? AND status='rejected'", (symbol,))}
+
+
+def daily_limits(now: Optional[float] = None) -> Dict[str, Any]:
+    """Mentorship rules: max trades per day, and stop after N losses in a row (trades you marked as taken)."""
+    _ensure()
+    t = now if now is not None else time.time()
+    try:
+        tz = ZoneInfo(config.DISPLAY_TZ)
+    except Exception:
+        tz = timezone.utc
+    midnight = int(datetime.fromtimestamp(t, tz).replace(
+        hour=0, minute=0, second=0, microsecond=0).timestamp())
+    with _conn() as c:
+        rows = c.execute("SELECT outcome FROM alerts WHERE taken=1 AND created_at>=? ORDER BY id DESC",
+                         (midnight,)).fetchall()
+    outs = [r["outcome"] for r in rows]
+    consec = 0
+    for o in outs:
+        if o == "lost":
+            consec += 1
+        elif o:                       # won / breakeven / skipped ends the streak; unmarked is ignored
+            break
+    blocked = ""
+    if consec >= config.MAX_CONSEC_LOSSES:
+        blocked = f"STOP FOR TODAY: {consec} losses in a row (rule: stop after {config.MAX_CONSEC_LOSSES})"
+    elif len(outs) >= config.MAX_TRADES_PER_DAY:
+        blocked = f"DAILY LIMIT: {len(outs)} trades taken today (rule: max {config.MAX_TRADES_PER_DAY})"
+    return {"trades_today": len(outs), "consecutive_losses": consec, "blocked": blocked,
+            "max_trades": config.MAX_TRADES_PER_DAY, "max_losses": config.MAX_CONSEC_LOSSES}
+
+
 # ---------------------------------------------------------------- read
 def _row(r: sqlite3.Row) -> Dict[str, Any]:
     d = dict(r)
     d["saved"] = bool(d["saved"])
+    d["taken"] = bool(d.get("taken", 0))
     try:
         d["meta"] = json.loads(d["meta"])
     except Exception:

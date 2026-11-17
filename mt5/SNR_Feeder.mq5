@@ -4,12 +4,12 @@
 //| backend. It never places, modifies or closes trades.             |
 //+------------------------------------------------------------------+
 #property copyright "SNR Story Line System"
-#property version   "1.00"
+#property version   "1.10"
 #property description "Data feeder for the SNR story-line backend (read-only, no trading)."
 
 input string BackendUrl   = "https://YOUR-SERVICE.onrender.com/ingest"; // must be whitelisted in MT5 options
 input string ApiKey       = "";     // same value as API_KEY on Render
-input int    HeartbeatSec = 60;     // keep-alive / account info interval
+input int    HeartbeatSec = 15;     // keep-alive interval; also how fast "Sync now" in the web page reaches MT5
 input int    BarsMN1      = 36;
 input int    BarsW1       = 120;
 input int    BarsD1       = 300;
@@ -121,8 +121,8 @@ bool Send(const bool full, const int mask)
    string resp;
    if(!Post(json, resp))
       return false;
-   if(StringFind(resp, "\"need_full\":true") >= 0)
-      g_needFull = true;          // backend restarted or lacks data: resend everything
+   if(StringFind(resp, "\"need_full\":true") >= 0 || StringFind(resp, "\"sync\":true") >= 0)
+      g_needFull = true;          // backend restarted / lacks data / you pressed "Sync now": resend everything
    else if(full)
       g_needFull = false;
    if(full)

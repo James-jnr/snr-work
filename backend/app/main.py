@@ -9,9 +9,9 @@ from typing import Optional
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Query
 
 from . import config, db, service
-from .analysis import analyze, pip_for
+from .analysis import analyze_live, pip_for
 from .engine import LTF_OF, TF_SEC, Params, storyline_events
-from .messages import fmt_brief, fmt_t
+from .messages import fmt_report, fmt_t
 from .models import IngestPayload
 from .notify import notify
 from .state import STORE, TFS
@@ -94,6 +94,8 @@ def ingest(p: IngestPayload, bg: BackgroundTasks, x_api_key: Optional[str] = Hea
             if ready and (p.full or not st.warmed):
                 msgs = service.warmup(st)
                 st.warmed = True
+                if p.full:
+                    st.sync_pending = False
             elif ready and new_tfs:
                 msgs = service.on_new_bars(st, new_tfs)
         except Exception:
@@ -102,32 +104,35 @@ def ingest(p: IngestPayload, bg: BackgroundTasks, x_api_key: Optional[str] = Hea
             msgs.insert(0, (f"✅ {p.symbol}: MT5 feed restored", "Data is flowing again."))
     for m in msgs:                      # m = (subject, body) or (subject, body, meta)
         bg.add_task(notify, *m)
-    return {"ok": True, "need_full": not ready, "alerts": len(msgs)}
+    return {"ok": True, "need_full": not ready, "alerts": len(msgs), "sync": bool(st.sync_pending and not p.full)}
 
 
 @app.get("/state")
 def state(symbol: str, x_api_key: Optional[str] = Header(default=None), key: Optional[str] = None):
     auth(x_api_key or key)
     with STORE.lock:
-        a = analyze(STORE.get(symbol))
+        st = STORE.peek(symbol)
+        a = analyze_live(st) if st else None
     if a is None:
         raise HTTPException(409, "not enough data yet")
     return {"price": a.price, "pip": a.pip,
             "stories": {tf: (s.__dict__ if s else None) for tf, s in a.stories.items()},
-            "signals": [{**g.__dict__, "confirm": g.confirm.__dict__} for g in a.signals],
-            "skipped": a.skipped}
+            "status": a.status, "zones": a.zones, "liquidity": a.liquidity, "limits": a.limits,
+            "selected": {tf: [k.as_dict() for k in v] for tf, v in a.selected.items()},
+            "setups": a.setups}
 
 
 @app.get("/brief")
 def brief(symbol: str, send: bool = False, x_api_key: Optional[str] = Header(default=None), key: Optional[str] = None):
     auth(x_api_key or key)
     with STORE.lock:
-        a = analyze(STORE.get(symbol))
+        st = STORE.peek(symbol)
+        a = analyze_live(st) if st else None
     if a is None:
         raise HTTPException(409, "not enough data yet")
-    text = fmt_brief(a, "On-demand brief")
+    text = fmt_report(a, db.story_statuses(symbol), ["ON-DEMAND BRIEF"])
     if send:
-        notify(f"📋 {symbol} brief", text)
+        notify(f"📋 {symbol} brief", text, {"kind": "brief", "symbol": symbol})
     return {"text": text}
 
 
@@ -137,7 +142,7 @@ def storylines(symbol: str, tf: str = "D1", last: int = 15,
     """History of detected story lines: compare with your own chart to validate/tune the rules."""
     auth(x_api_key or key)
     if tf not in LTF_OF:
-        raise HTTPException(400, "tf must be MN1, W1 or D1")
+        raise HTTPException(400, "tf must be MN1, W1, D1 or H4")
     with STORE.lock:
         st = STORE.get(symbol)
         if not st.ready():

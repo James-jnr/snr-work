@@ -4,277 +4,88 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SNR Alerts</title>
-<style>
-:root{--bg:#f6f7f9;--card:#fff;--text:#1b1f24;--muted:#667085;--line:#e2e5ea;--accent:#2563eb;
---buy:#0f9d58;--sell:#d93025;--warn:#b45309;--chip:#eef1f5}
-@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2127;--text:#e8eaed;--muted:#9aa3af;
---line:#2d333b;--accent:#6ea8fe;--buy:#4cc38a;--sell:#ff7b72;--warn:#e3b341;--chip:#2a3038}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-h1{font-size:17px;margin:0 12px 0 0}
-.tabs button{border:0;background:none;color:var(--muted);font:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
-.tabs button.on{background:var(--chip);color:var(--text);font-weight:600}
-.status{margin-left:auto;color:var(--muted);font-size:13px}
-.filters{margin-top:8px}
-select,input,textarea,button{font:inherit;color:var(--text)}
-select,input[type=search],input[type=password],textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
-input[type=search]{min-width:160px;flex:1}
-main{max-width:900px;margin:0 auto;padding:12px 14px 60px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
-.card.saved{border-left:4px solid var(--accent)}
-.head{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;cursor:pointer}
-.main{flex:1;min-width:0}
-.subj{font-weight:600;overflow-wrap:anywhere}
-.sub{color:var(--muted);font-size:13px;margin-top:2px}
-.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:1px 8px;font-size:12px;margin-right:4px;color:var(--muted)}
-.buy{color:var(--buy)} .sell{color:var(--sell)}
-.grade{font-weight:700}
-.star{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
-.star.on{color:#f5b301}
-.detail{display:none;border-top:1px solid var(--line);padding:10px 12px}
-.card.open .detail{display:block}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 10px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace}
-.notes{display:grid;gap:8px}
-textarea{width:100%;min-height:64px;resize:vertical}
-.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
-.btn.ghost{background:var(--chip);color:var(--text)}
-.empty,.msg{color:var(--muted);text-align:center;padding:30px 10px}
-.err{color:var(--sell)}
-table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
-th:first-child,td:first-child{text-align:left}
-th{color:var(--muted);font-weight:600;font-size:13px}
-.hint{color:var(--muted);font-size:13px;margin:8px 2px}
-.keybox{display:none;margin-top:8px}
-.navlink{color:var(--accent);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px}
-.navlink:hover{background:var(--chip)}
-.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin:0 0 10px}
-.charts img{width:100%;display:block;border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
-</style>
+<link rel="stylesheet" href="/static/ui.css">
 </head>
 <body>
-<header>
-  <div class="row">
-    <h1>SNR Alerts</h1>
+<div id="hdr"></div>
+<main>
+  <div class="bar">
     <div class="tabs" id="tabs">
-      <button data-tab="alerts" class="on">Alerts</button>
-      <button data-tab="saved">Saved</button>
-      <button data-tab="stats">Stats</button>
+      <button data-v="alerts" class="on">All alerts</button><button data-v="saved">Saved</button><button data-v="stats">Stats</button>
     </div>
-    <a class="navlink" href="/charts">Charts</a>
-    <div class="status" id="status">loading…</div>
-  </div>
-  <div class="row keybox" id="keybox">
-    <input type="password" id="keyin" placeholder="API key (API_KEY from your .env)">
-    <button class="btn" id="keysave">Use key</button>
-    <span class="err" id="keyerr"></span>
-  </div>
-  <div class="row filters" id="filters">
     <select id="f-symbol"><option value="">All symbols</option></select>
     <select id="f-kind">
-      <option value="">All types</option>
-      <option value="setup">Setups</option>
-      <option value="storyline">Story lines</option>
-      <option value="brief">Briefings</option>
-      <option value="snapshot">Snapshots</option>
-      <option value="feed">Feed status</option>
-      <option value="test">Tests</option>
+      <option value="">All types</option><option value="setup">Setups</option><option value="storyline">Story lines</option>
+      <option value="brief">Briefings</option><option value="snapshot">Snapshots</option><option value="feed">Feed status</option>
     </select>
-    <select id="f-grade"><option value="">Any grade</option><option>A</option><option>B</option><option>C</option></select>
-    <select id="f-dir"><option value="">Buy + sell</option><option value="buy">Buy</option><option value="sell">Sell</option></select>
+    <select id="f-dir"><option value="">Buy + sell</option><option value="buy">Buy only</option><option value="sell">Sell only</option></select>
     <input type="search" id="f-q" placeholder="Search text and notes">
+    <span class="small" id="count"></span>
   </div>
-</header>
-<main id="main"></main>
-
+  <div id="out"></div>
+</main>
+<script src="/static/ui.js"></script>
 <script>
 "use strict";
-const $ = (s) => document.querySelector(s);
-let tab = "alerts", alerts = [], opened = new Set(), lastSig = "", timer = null;
-let apiKey = "";
-try { apiKey = localStorage.getItem("snr_key") || ""; } catch (e) {}
+const {$, el, api, fmtTime} = SNR;
+SNR.header("alerts");
+let view = "alerts", seen = null, lastSig = "";
+const KIND = {setup: "Setup", storyline: "Story line", brief: "Briefing", snapshot: "Snapshot", feed: "Feed", test: "Test", other: "Other"};
 
-function el(tag, attrs, ...kids) {
-  const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs || {})) {
-    if (k === "class") n.className = v;
-    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
-    else if (v !== false && v != null) n.setAttribute(k, v);
-  }
-  for (const c of kids.flat()) if (c != null) n.append(c.nodeType ? c : document.createTextNode(c));
-  return n;
+function chips(a) {
+  const out = [];
+  if (a.kind === "setup" && a.direction) out.push(el("span", {class: "chip " + a.direction}, a.direction.toUpperCase() + (a.grade ? " · grade " + a.grade : "")));
+  if (a.kind === "storyline" && a.direction) out.push(el("span", {class: "chip " + a.direction}, a.direction === "buy" ? "Buy bias" : "Sell bias"));
+  for (const s of (a.meta && a.meta.stories) || []) out.push(el("span", {class: "chip " + (s.dir === "bull" ? "buy" : "sell")}, s.name + " " + (s.dir === "bull" ? "bullish" : "bearish")));
+  return out;
 }
-
-async function api(path, opts) {
-  const o = Object.assign({headers: {}}, opts || {});
-  if (apiKey) o.headers["X-API-Key"] = apiKey;
-  if (o.body) o.headers["Content-Type"] = "application/json";
-  const r = await fetch(path, o);
-  if (r.status === 401 || r.status === 503) { showKeyBox(r.status === 401 && apiKey ? "Wrong key" : ""); throw new Error("auth"); }
-  if (!r.ok) throw new Error((await r.text()) || r.status);
-  $("#keybox").style.display = "none";
-  return r.json();
+function row(a, fresh) {
+  const tr = el("tr", {class: "row" + (fresh ? " fresh" : ""), onclick: () => location.href = "/alert/" + a.id},
+    el("td", {}, el("button", {class: "star" + (a.saved ? " on" : ""), title: "Save", onclick: async (e) => {
+      e.stopPropagation(); const r = await api(`/api/alerts/${a.id}/save`, {method: "POST", body: {saved: !a.saved}}); a.saved = r.saved; e.target.classList.toggle("on", a.saved); e.target.textContent = a.saved ? "★" : "☆"; }}, a.saved ? "★" : "☆")),
+    el("td", {class: "small", style: "white-space:nowrap"}, fmtTime(a.created_at)),
+    el("td", {}, el("b", {}, a.symbol || "")),
+    el("td", {}, el("span", {class: "chip type"}, KIND[a.kind] || a.kind)),
+    el("td", {}, a.subject),
+    el("td", {}, ...chips(a)),
+    el("td", {class: "small", style: "white-space:nowrap"}, a.taken ? "✔ took it " : "", a.outcome || "",
+       (a.meta && a.meta.charts && a.meta.charts.length) ? "  🖼 " + a.meta.charts.length : ""));
+  return tr;
 }
-function showKeyBox(msg) { $("#keybox").style.display = "flex"; $("#keyerr").textContent = msg || ""; }
-$("#keysave").onclick = () => {
-  apiKey = $("#keyin").value.trim();
-  try { localStorage.setItem("snr_key", apiKey); } catch (e) {}
-  lastSig = ""; refresh();
-};
-
-function fmtTime(ts) {
-  const d = new Date(ts * 1000);
-  return d.toLocaleString(undefined, {weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"});
-}
-function num(v, p) { return v == null ? "–" : Number(v).toFixed(p == null ? 2 : p); }
-
-function summary(a) {
-  if (a.kind !== "setup") return "";
-  const bits = [];
-  if (a.entry != null) bits.push("entry " + num(a.entry));
-  if (a.sl != null) bits.push("SL " + num(a.sl) + (a.sl_pips ? " (" + num(a.sl_pips, 0) + "p)" : ""));
-  if (a.tp != null) bits.push("TP " + num(a.tp) + (a.tp_pips ? " (" + num(a.tp_pips, 0) + "p)" : ""));
-  if (a.lots) bits.push(a.lots + " lots");
-  return bits.join("  ·  ");
-}
-
-function card(a) {
-  const isOpen = opened.has(a.id);
-  const star = el("button", {class: "star" + (a.saved ? " on" : ""), title: a.saved ? "Unsave" : "Save",
-    onclick: async (e) => { e.stopPropagation(); await toggleSave(a); }}, a.saved ? "★" : "☆");
-  const dirCls = a.direction === "buy" ? "buy" : a.direction === "sell" ? "sell" : "";
-  const chips = [el("span", {class: "chip"}, a.kind)];
-  if (a.grade) chips.push(el("span", {class: "chip grade"}, "grade " + a.grade));
-  if (a.direction) chips.push(el("span", {class: "chip " + dirCls}, a.direction));
-  if (a.outcome) chips.push(el("span", {class: "chip"}, a.outcome));
-  const head = el("div", {class: "head", onclick: () => {
-    opened.has(a.id) ? opened.delete(a.id) : opened.add(a.id);
-    c.classList.toggle("open");
-  }},
-    el("div", {class: "main"},
-      el("div", {class: "subj"}, a.subject),
-      el("div", {class: "sub"}, chips, fmtTime(a.created_at), a.notes ? "  ·  📝" : ""),
-      summary(a) ? el("div", {class: "sub"}, summary(a)) : null),
-    star);
-
-  const notes = el("textarea", {placeholder: "Your notes: why you took it, skipped it, what happened…"});
-  notes.value = a.notes || "";
-  const outcome = el("select", {}, ...[["", "Outcome: not set"], ["won", "Won"], ["lost", "Lost"],
-    ["breakeven", "Breakeven"], ["skipped", "Skipped"]].map(([v, t]) => el("option", {value: v}, t)));
-  outcome.value = a.outcome || "";
-  const msg = el("span", {class: "sub"});
-  const saveBtn = el("button", {class: "btn", onclick: async () => {
-    try {
-      const u = await api("/api/alerts/" + a.id + "/notes",
-        {method: "POST", body: JSON.stringify({notes: notes.value, outcome: outcome.value})});
-      Object.assign(a, u); msg.textContent = "Saved ✓";
-    } catch (e) { msg.textContent = "Could not save"; }
-  }}, "Save notes");
-  const body = el("pre", {}, a.body);
-  const imgs = (a.meta && a.meta.charts && a.meta.charts.length) ? el("div", {class: "charts"},
-    ...a.meta.charts.map(c => { const u = "/api/chart-files/" + encodeURIComponent(c.file) + (apiKey ? "?key=" + encodeURIComponent(apiKey) : "");
-      return el("a", {href: u, target: "_blank", title: c.tf}, el("img", {src: u, loading: "lazy", alt: c.tf + " chart"})); })) : null;
-  const meta = a.txt_file ? el("div", {class: "sub"}, "File: setups/all/" + a.txt_file) : null;
-  const detail = el("div", {class: "detail"}, body, imgs, el("div", {class: "notes"}, notes,
-    el("div", {class: "row"}, outcome, saveBtn, msg)), meta);
-
-  const c = el("div", {class: "card" + (a.saved ? " saved" : "") + (isOpen ? " open" : ""), "data-id": a.id}, head, detail);
-  return c;
-}
-
-async function toggleSave(a) {
-  try {
-    const u = await api("/api/alerts/" + a.id + "/save", {method: "POST", body: JSON.stringify({saved: !a.saved})});
-    Object.assign(a, u); lastSig = ""; render();
-  } catch (e) { $("#status").textContent = "save failed"; }
-}
-
-function filters() {
-  const p = new URLSearchParams();
-  const add = (k, v) => { if (v) p.set(k, v); };
-  add("symbol", $("#f-symbol").value); add("kind", $("#f-kind").value);
-  add("grade", $("#f-grade").value); add("direction", $("#f-dir").value);
-  add("q", $("#f-q").value.trim());
-  if (tab === "saved") p.set("saved", "true");
-  p.set("limit", "200");
-  return p.toString();
-}
-
-function render() {
-  const m = $("#main");
-  if (tab === "stats") return;
-  if (!alerts.length) {
-    m.replaceChildren(el("div", {class: "empty"}, tab === "saved"
-      ? "Nothing saved yet. Open an alert and tap the ☆ to keep it here."
-      : "No alerts yet. They appear here as soon as the backend raises one."));
-    return;
-  }
-  m.replaceChildren(...alerts.map(card));
-}
-
-function fillSymbols(list) {
-  const sel = $("#f-symbol"), cur = sel.value;
-  const have = [...sel.options].slice(1).map(o => o.value).join();
-  if (have === list.join()) return;
-  sel.replaceChildren(el("option", {value: ""}, "All symbols"), ...list.map(s => el("option", {value: s}, s)));
-  sel.value = list.includes(cur) ? cur : "";
-}
-
 async function loadAlerts() {
-  const d = await api("/api/alerts?" + filters());
-  fillSymbols(d.symbols);
-  const sig = d.alerts.map(a => [a.id, a.saved, a.outcome, a.notes.length, (a.meta && a.meta.charts ? a.meta.charts.length : 0)].join(":")).join("|");
-  alerts = d.alerts;
-  const typing = document.activeElement && document.activeElement.tagName === "TEXTAREA";
-  if (sig !== lastSig && !typing) { lastSig = sig; render(); }
-  $("#status").textContent = alerts.length + " shown · updated " + new Date().toLocaleTimeString();
+  const p = new URLSearchParams({limit: 300});
+  if (view === "saved") p.set("saved", "true");
+  for (const [id, k] of [["f-symbol", "symbol"], ["f-kind", "kind"], ["f-dir", "direction"], ["f-q", "q"]]) if ($("#" + id).value) p.set(k, $("#" + id).value);
+  const d = await api("/api/alerts?" + p);
+  const sel = $("#f-symbol"), cur = sel.value;
+  if (sel.options.length - 1 !== d.symbols.length) { sel.replaceChildren(el("option", {value: ""}, "All symbols"), ...d.symbols.map(s => el("option", {value: s}, s))); sel.value = cur; }
+  const sig = JSON.stringify(d.alerts.map(a => [a.id, a.saved, a.taken, a.outcome, (a.meta && a.meta.charts || []).length]));
+  $("#count").textContent = d.alerts.length + " shown";
+  if (sig === lastSig) return; lastSig = sig;
+  const ids = new Set(d.alerts.map(a => a.id));
+  if (!d.alerts.length) { $("#out").replaceChildren(el("div", {class: "empty"}, view === "saved" ? "Nothing saved yet. Click the star on an alert." : "No alerts yet. Waiting for MT5 data…")); seen = ids; return; }
+  const table = el("table", {class: "list"}, el("thead", {}, el("tr", {}, ...["", "Time", "Symbol", "Type", "What happened", "Direction / story lines", "Your result"].map(h => el("th", {}, h)))),
+    el("tbody", {}, ...d.alerts.map(a => row(a, seen && !seen.has(a.id)))));
+  seen = ids; $("#out").replaceChildren(table);
 }
-
 async function loadStats() {
-  const sym = $("#f-symbol").value;
-  const d = await api("/api/stats" + (sym ? "?symbol=" + encodeURIComponent(sym) : ""));
-  const rows = Object.entries(d.grades).map(([g, v]) => el("tr", {},
-    el("td", {}, "Grade " + g), el("td", {}, v.total), el("td", {}, v.won), el("td", {}, v.lost),
-    el("td", {}, v.breakeven), el("td", {}, v.skipped), el("td", {}, v.unmarked),
-    el("td", {}, v.win_rate == null ? "–" : v.win_rate + "%")));
-  const o = d.overall;
-  const kinds = Object.entries(d.by_kind).map(([k, n]) => k + ": " + n).join("   ·   ") || "no alerts yet";
-  $("#main").replaceChildren(
-    el("div", {class: "hint"}, "Alerts stored: " + kinds),
-    el("table", {},
-      el("thead", {}, el("tr", {}, ...["Setups", "Total", "Won", "Lost", "B/E", "Skipped", "Not marked", "Win rate"].map(h => el("th", {}, h)))),
-      el("tbody", {}, ...rows, el("tr", {}, el("td", {}, el("b", {}, "All grades")), el("td", {}, o.total),
-        el("td", {}, o.won), el("td", {}, o.lost), el("td", {}, o.breakeven), el("td", {}, o.skipped),
-        el("td", {}, o.unmarked), el("td", {}, o.win_rate == null ? "–" : o.win_rate + "%")))),
-    el("div", {class: "hint"}, "Win rate = won ÷ (won + lost), counting only setups you marked. Open any setup and set its outcome to build this up. A small sample says little: wait for dozens of marked trades before trusting a number."));
-  $("#status").textContent = "updated " + new Date().toLocaleTimeString();
+  const s = await api("/api/stats" + ($("#f-symbol").value ? "?symbol=" + encodeURIComponent($("#f-symbol").value) : ""));
+  const kinds = Object.entries(s.by_kind).map(([k, n]) => el("span", {class: "chip"}, (KIND[k] || k) + ": " + n));
+  const g = Object.entries(s.grades);
+  const t = el("table", {class: "lv"}, el("thead", {}, el("tr", {}, ...["Grade", "Setups", "Won", "Lost", "Break-even", "Skipped", "Unmarked", "Win rate"].map(h => el("th", {}, h)))),
+    el("tbody", {}, ...g.map(([k, v]) => el("tr", {}, el("td", {}, "Grade " + k), ...[v.total, v.won, v.lost, v.breakeven, v.skipped, v.unmarked].map(x => el("td", {}, x)), el("td", {}, v.win_rate === null ? "–" : v.win_rate + "%"))),
+      el("tr", {}, el("td", {}, el("b", {}, "All")), ...[s.overall.total, s.overall.won, s.overall.lost, s.overall.breakeven, s.overall.skipped, s.overall.unmarked].map(x => el("td", {}, el("b", {}, x))), el("td", {}, el("b", {}, s.overall.win_rate === null ? "–" : s.overall.win_rate + "%")))));
+  $("#out").replaceChildren(el("div", {class: "card"}, el("h2", {}, "Alerts by type"), el("div", {}, ...kinds)),
+    el("div", {class: "card", style: "margin-top:12px"}, el("h2", {}, "Results of setups you marked (by grade)"), el("div", {class: "tablewrap"}, t),
+      el("div", {class: "small", style: "margin-top:8px"}, "Mark each setup's result on its alert page to fill this in. Win rate counts won vs lost only.")));
+  $("#count").textContent = "";
 }
-
-async function refresh() {
-  try { tab === "stats" ? await loadStats() : await loadAlerts(); }
-  catch (e) { if (e.message !== "auth") $("#status").textContent = "backend not reachable"; }
-}
-
-function setTab(t) {
-  tab = t; lastSig = "";
-  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
-  $("#filters").style.display = t === "stats" ? "none" : "flex";
-  refresh();
-}
-document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
-["f-symbol", "f-kind", "f-grade", "f-dir"].forEach(id => $("#" + id).onchange = () => { lastSig = ""; refresh(); });
-let qt; $("#f-q").oninput = () => { clearTimeout(qt); qt = setTimeout(() => { lastSig = ""; refresh(); }, 300); };
-
-(async () => {
-  try {
-    const c = await (await fetch("/api/config")).json();
-    if (c.needs_key && !apiKey) showKeyBox("");
-  } catch (e) {}
-  refresh();
-  timer = setInterval(() => { if (!document.hidden) refresh(); }, 15000);
-})();
+async function load() { try { view === "stats" ? await loadStats() : await loadAlerts(); } catch (e) { if (e.message !== "auth") $("#out").replaceChildren(el("div", {class: "empty err"}, "Could not load: " + e.message)); } }
+$("#tabs").addEventListener("click", (e) => { if (!e.target.dataset.v) return; view = e.target.dataset.v; lastSig = ""; seen = null; document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b === e.target)); load(); });
+["f-symbol", "f-kind", "f-dir"].forEach(id => $("#" + id).addEventListener("change", () => { lastSig = ""; seen = null; load(); }));
+let t; $("#f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { lastSig = ""; seen = null; load(); }, 300); });
+window.addEventListener("snr-synced", () => { lastSig = ""; load(); });
+load(); setInterval(() => { if (!document.hidden) load(); }, 15000);
 </script>
 </body>
 </html>

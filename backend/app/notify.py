@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 import httpx
 
 from . import charts as chartlib
-from . import config, db
+from . import config, db, netinfo
 
 log = logging.getLogger("notify")
 
@@ -121,6 +121,13 @@ def notify(subject: str, text: str, meta: Optional[dict] = None, charts=None):
     log.info("ALERT: %s", subject)
     row = _store(subject, text, meta)
     images = _render_images(charts, row)
+    link = ""
+    if row:
+        try:
+            link = f"\n\nOpen this alert: {netinfo.base_url()}/alert/{row['id']}"
+        except Exception:
+            link = ""
+    text = text + link
     calls = [(_telegram, (f"{subject}\n\n{text}",))]
     if images:                       # images are only passed when there are some (keeps old call shapes valid)
         calls.append((_telegram_photos, (images,)))

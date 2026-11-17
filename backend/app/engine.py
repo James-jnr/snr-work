@@ -15,7 +15,10 @@ from dataclasses import dataclass
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 TF_SEC = {"H1": 3600, "H4": 14400, "D1": 86400, "W1": 604800, "MN1": 2678400}
-LTF_OF = {"MN1": "W1", "W1": "D1", "D1": "H4"}  # story-line TF -> breakout/obstacle TF
+LTF_OF = {"MN1": "W1", "W1": "D1", "D1": "H4", "H4": "H1"}   # story-line TF -> breakout / obstacle TF
+PARENT_OF = {"W1": "MN1", "D1": "W1", "H4": "D1"}              # whose obstacles this TF's levels are
+TF_NAME = {"MN1": "Monthly", "W1": "Weekly", "D1": "Daily", "H4": "4-hour", "H1": "1-hour"}
+STORY_TFS = ("MN1", "W1", "D1", "H4")
 
 
 class Bar(NamedTuple):
@@ -43,6 +46,9 @@ class Level:
     avail: int     # first bar index on which the level may be used
     role: str      # current role: "R" or "S"
     flips: int = 0
+    idx: int = 0        # candle index where the level was formed
+    touches: int = 0    # candles whose range reached the level
+    qm: bool = False    # this level was broken by a structure break (QM) on its own timeframe
 
 
 @dataclass
@@ -108,7 +114,7 @@ def make_levels(tf: str, bars: List[Bar], n: int) -> List[Level]:
         if key in seen:
             return
         seen.add(key)
-        out.append(Level(tf, kind, price, bars[i].t, avail, role))
+        out.append(Level(tf, kind, price, bars[i].t, avail, role, 0, i))
 
     for i in range(len(bars)):
         if _pivot(cl, i, n, True):
@@ -136,6 +142,8 @@ def scan(tf: str, bars: List[Bar], p: Params, start: int = 0):
         for lv in active:
             if lv.t >= b.t:
                 continue
+            if b.l - tol <= lv.price <= b.h + tol:
+                lv.touches += 1
             if k >= start:
                 if lv.role == "R" and b.h >= lv.price - tol and b.c < lv.price:
                     rej.append(Rejection(k, "bear", lv.price, lv.kind, lv.t, tf, lv.flips))
@@ -169,6 +177,25 @@ def find_qms(bars: List[Bar], w: int) -> List[QM]:
             if sh[-1][1] > sh[-2][1] and sl[-1][1] > sl[-2][1] and cl[i] < sl[-1][1] and sl[-1][0] not in used_lo:
                 used_lo.add(sl[-1][0]); out.append(QM("bear", i, sl[-1][1]))
     return out
+
+
+# ---------------------------------------------------------------- level strength (0-100)
+TF_WEIGHT = {"MN1": 40, "W1": 32, "D1": 24, "H4": 16, "H1": 8}
+RECENT_WINDOW = {"MN1": 24, "W1": 52, "D1": 90, "H4": 120, "H1": 150}   # candles that still count as "recent"
+
+
+def level_label(lv: Level) -> str:
+    """Mentor-style type name: QM level, OCL (open-close level) or Classic A/V (peak / trough)."""
+    return "QM" if lv.qm else "OCL" if lv.kind == "OC" else "Classic A/V"
+
+
+def strength(lv: Level, n_bars: int) -> int:
+    """Timeframe weight + touches + role changes (RBS/SBR) + how recent it is."""
+    age = max(0, n_bars - 1 - lv.idx)
+    rec = max(0.0, 1.0 - age / RECENT_WINDOW.get(lv.tf, 100))
+    s = (TF_WEIGHT.get(lv.tf, 8) + min(3, lv.touches) * 8 + min(2, lv.flips) * 10
+         + 16 * rec + (4 if lv.qm else 0))
+    return int(min(100, round(s)))
 
 
 def _end(bars: List[Bar], k: int, tf: str) -> int:
