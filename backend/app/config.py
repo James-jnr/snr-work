@@ -63,7 +63,7 @@ OFFLINE_AFTER_SEC = int(_f("OFFLINE_AFTER_SEC", 600))
 # --- charts ---
 CHARTS_IN_ALERTS = _b("CHARTS_IN_ALERTS", True)      # attach per-timeframe level charts to alerts
 CHART_THEME = os.getenv("CHART_THEME", "light")      # light | dark
-CHART_STYLE = os.getenv("CHART_STYLE", "line")       # line (closes, as in the course) | candles
+CHART_STYLE = os.getenv("CHART_STYLE", "candles")    # candles | line (closes)
 
 # --- v3: levels, zones, limits, interface ---
 ZONE_OVERLAP_PIPS = _f("ZONE_OVERLAP_PIPS", 0)      # 0 = automatic (gold 25, JPY 15, other forex 12)

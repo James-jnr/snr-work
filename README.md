@@ -58,7 +58,7 @@ Telegram and email are optional: with neither set, everything still lands on the
 `PIVOT_N_<TF>`, `QM_W_<TF>` (how big a swing counts), `ZONE_OVERLAP_PIPS` (0 = auto: gold 25, JPY 15, forex 12),
 `MIN_TARGET_PIPS` (ignore targets closer than this), `MIN_GAP_PIPS`, `MIN_GRADE` (A/B/C for confirmation alerts),
 `SIGNAL_COOLDOWN_H`, `APPROACH_PIPS`, `MAX_TRADES_PER_DAY`, `MAX_CONSEC_LOSSES`, `SUPPRESS_WHEN_LIMIT`, `CHARTS_IN_ALERTS`,
-`CHART_THEME`, `CHART_STYLE`, `BASE_URL`, `PIP_OVERRIDES`.
+`CHART_THEME`, `CHART_STYLE`, `BASE_URL`, `PIP_OVERRIDES`. Timeframe charts default to candlesticks and show 30 candles for each timeframe (Monthly, Weekly, Daily, 4-hour, and 1-hour); the chart page still lets you switch to a close-price line.
 
 ## Tests
 ```

@@ -12,8 +12,8 @@
   <div class="bar">
     <select id="symbol"></select>
     <div class="tabs" id="tabs"></div>
-    <label class="small">Candles <select id="bars"><option value="0">default</option><option>40</option><option>80</option><option>120</option><option>200</option></select></label>
-    <label class="small">Style <select id="style"><option value="line">Line of closes (course)</option><option value="candles">Candles</option></select></label>
+    <span class="small">30 candles per timeframe</span>
+    <label class="small">Style <select id="style"><option value="candles">Candlesticks</option><option value="line">Line of closes</option></select></label>
     <label class="small">Levels <select id="levels"><option value="key">Key levels + obstacles</option><option value="all">All recent levels</option></select></label>
     <label class="small"><input type="checkbox" id="auto" checked> auto-refresh</label>
     <span class="small" id="status"></span>
@@ -50,7 +50,7 @@ function stories() {
 }
 async function load() {
   const sym = $("#symbol").value; if (!sym) return;
-  const q = new URLSearchParams({symbol: sym, tf, bars: $("#bars").value, style: $("#style").value, theme: dark ? "dark" : "light", all_levels: $("#levels").value === "all", t: Date.now()});
+  const q = new URLSearchParams({symbol: sym, tf, style: $("#style").value, theme: dark ? "dark" : "light", all_levels: $("#levels").value === "all", t: Date.now()});
   const img = $("#img"), msg = $("#msg");
   try {
     const r = await fetch(withKey("/api/chart.png?" + q));
@@ -72,7 +72,7 @@ async function load() {
 }
 async function init() { try { await loadMeta(); } catch (e) { return; } tabs(); stories(); load(); }
 $("#symbol").onchange = () => { stories(); load(); };
-["bars", "style", "levels"].forEach(id => $("#" + id).onchange = load);
+["style", "levels"].forEach(id => $("#" + id).onchange = load);
 window.addEventListener("snr-synced", async () => { await loadMeta(); stories(); load(); });
 init();
 setInterval(async () => { if (document.hidden || !$("#auto").checked) return; try { await loadMeta(); stories(); } catch (e) {} load(); }, 30000);
