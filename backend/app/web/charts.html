@@ -4,160 +4,78 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SNR Charts</title>
-<style>
-:root{--bg:#f6f7f9;--card:#fff;--text:#1b1f24;--muted:#667085;--line:#e2e5ea;--accent:#2563eb;
---buy:#0f9d58;--sell:#d93025;--chip:#eef1f5}
-@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2127;--text:#e8eaed;--muted:#9aa3af;
---line:#2d333b;--accent:#6ea8fe;--buy:#4cc38a;--sell:#ff7b72;--chip:#2a3038}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-h1{font-size:17px;margin:0 12px 0 0}
-.navlink{color:var(--accent);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px}
-.tabs button{border:0;background:none;color:var(--muted);font:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
-.tabs button.on{background:var(--chip);color:var(--text);font-weight:600}
-.status{margin-left:auto;color:var(--muted);font-size:13px}
-select,input,button{font:inherit;color:var(--text)}
-select,input[type=password]{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
-.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
-main{max-width:1240px;margin:0 auto;padding:12px 14px 60px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:10px}
-.chart img{width:100%;display:block;border-radius:8px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 4px}
-.chip{background:var(--chip);border-radius:999px;padding:3px 10px;font-size:13px}
-.buy{color:var(--buy)} .sell{color:var(--sell)}
-.hint{color:var(--muted);font-size:13px;margin:6px 2px}
-.err{color:var(--sell)} .empty{color:var(--muted);text-align:center;padding:40px 10px}
-.keybox{display:none;margin-top:8px}
-.tablewrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%}
-th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-th{color:var(--muted);font-weight:600;font-size:13px}
-tr.R td:first-child{border-left:4px solid var(--sell)} tr.S td:first-child{border-left:4px solid var(--buy)}
-</style>
+<link rel="stylesheet" href="/static/ui.css">
 </head>
 <body>
-<header>
-  <div class="row">
-    <h1>SNR Charts</h1>
-    <a class="navlink" href="/ui">Alerts</a>
+<div id="hdr"></div>
+<main>
+  <div class="bar">
     <select id="symbol"></select>
     <div class="tabs" id="tabs"></div>
-    <div class="status" id="status">loading…</div>
+    <label class="small">Candles <select id="bars"><option value="0">default</option><option>40</option><option>80</option><option>120</option><option>200</option></select></label>
+    <label class="small">Style <select id="style"><option value="line">Line of closes (course)</option><option value="candles">Candles</option></select></label>
+    <label class="small">Levels <select id="levels"><option value="key">Key levels + obstacles</option><option value="all">All recent levels</option></select></label>
+    <label class="small"><input type="checkbox" id="auto" checked> auto-refresh</label>
+    <span class="small" id="status"></span>
   </div>
-  <div class="row" style="margin-top:8px">
-    <label>Candles <select id="bars"><option value="0">default</option><option>40</option><option>80</option><option>120</option><option>200</option></select></label>
-    <label>Style <select id="style"><option value="line">Line of closes (course)</option><option value="candles">Candles</option></select></label>
-    <label>Levels <select id="levels"><option value="8">8</option><option value="12" selected>12</option><option value="20">20</option><option value="all">All</option></select></label>
-    <label><input type="checkbox" id="auto" checked> auto-refresh</label>
-  </div>
-  <div class="row keybox" id="keybox">
-    <input type="password" id="keyin" placeholder="API key (API_KEY from your .env)">
-    <button class="btn" id="keysave">Use key</button><span class="err" id="keyerr"></span>
-  </div>
-</header>
-<main>
-  <div class="card"><div class="chips" id="stories"></div></div>
-  <div class="card chart"><img id="img" alt="chart"><div class="empty" id="msg" style="display:none"></div></div>
-  <div class="hint">Each tab shows <b>one timeframe alone</b>: only the levels the engine finds on that timeframe's own closing prices. Compare them with how you would mark the same chart; where they differ is where the rules need tuning.</div>
-  <div class="card"><b>Active levels on this timeframe</b> <span class="hint" id="lvlsum"></span>
-    <div class="tablewrap"><table><thead><tr><th>Price</th><th>Type</th><th>Kind</th><th>Flips</th><th>Pips from price</th><th>Formed</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="card"><div id="stories"></div></div>
+  <div class="card" style="margin-top:12px"><img id="img" class="chartimg" alt="chart" style="display:none"><div class="empty" id="msg" style="display:none"></div></div>
+  <div class="small" style="margin:8px 2px">Click the chart to enlarge it. Each tab shows <b>one timeframe alone</b>: only the key levels and obstacles the engine selected for it (most relevant, most recent, strongest). The zone map puts the key levels of every timeframe on one chart; shaded bands are strong zones where timeframes overlap.</div>
+  <div class="card" id="lvcard"><h2 id="lvtitle">Levels on this timeframe</h2>
+    <div class="tablewrap"><table class="lv"><thead><tr><th>Level</th><th>Role in the story line</th><th>Price</th><th>Strength</th><th>Pips from price</th><th>Touched</th><th>Role changes</th><th>Strong zone</th><th>Formed</th></tr></thead><tbody id="rows"></tbody></table></div>
   </div>
 </main>
+<script src="/static/ui.js"></script>
 <script>
 "use strict";
-const $ = (s) => document.querySelector(s);
-const TFS = [["MN1","Monthly"],["W1","Weekly"],["D1","Daily"],["H4","4-Hour"],["H1","1-Hour"]];
-let tf = "D1", apiKey = "", timer = null, metaCache = {};
-try { apiKey = localStorage.getItem("snr_key") || ""; } catch (e) {}
+const {$, el, api, withKey} = SNR;
+SNR.header("charts");
+const TFS = [["ZM", "Zone map"], ["MN1", "Monthly"], ["W1", "Weekly"], ["D1", "Daily"], ["H4", "4-hour"], ["H1", "1-hour"]];
 const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+let tf = "ZM", meta = {}, blobUrl = "";
 
-function qs(extra) {
-  const p = new URLSearchParams({symbol: $("#symbol").value, tf, ...extra});
-  if (apiKey) p.set("key", apiKey);
-  return p.toString();
-}
-function showKeyBox(msg) { $("#keybox").style.display = "flex"; $("#keyerr").textContent = msg || ""; }
-$("#keysave").onclick = () => { apiKey = $("#keyin").value.trim(); try { localStorage.setItem("snr_key", apiKey); } catch (e) {} init(); };
-
-async function getJSON(url) {
-  const r = await fetch(url);
-  if (r.status === 401 || r.status === 503) { showKeyBox(apiKey ? "Wrong key" : ""); throw new Error("auth"); }
-  if (!r.ok) { let t = ""; try { t = (await r.json()).detail; } catch (e) {} throw new Error(t || r.status); }
-  $("#keybox").style.display = "none";
-  return r.json();
-}
-
-function buildTabs() {
-  $("#tabs").replaceChildren(...TFS.map(([k, n]) => {
-    const b = document.createElement("button"); b.textContent = n; b.dataset.tf = k;
-    b.className = k === tf ? "on" : ""; b.onclick = () => { tf = k; buildTabs(); load(); }; return b; }));
-}
-
+function tabs() { $("#tabs").replaceChildren(...TFS.map(([k, n]) => el("button", {class: k === tf ? "on" : "", onclick: () => { tf = k; tabs(); load(); }}, n))); }
 async function loadMeta() {
-  const m = await getJSON("/api/chart-meta?" + (apiKey ? "key=" + encodeURIComponent(apiKey) : ""));
-  metaCache = m;
-  const sel = $("#symbol"), cur = sel.value, syms = Object.keys(m);
-  if (sel.options.length !== syms.length) {
-    sel.replaceChildren(...syms.map(s => { const o = document.createElement("option"); o.value = o.textContent = s; return o; }));
-    if (syms.includes(cur)) sel.value = cur;
-  }
-  return m;
+  meta = await api("/api/chart-meta");
+  const sel = $("#symbol"), cur = sel.value, syms = Object.keys(meta);
+  if (sel.options.length !== syms.length) { sel.replaceChildren(...syms.map(s => el("option", {value: s}, s))); if (syms.includes(cur)) sel.value = cur; }
 }
-
-function renderStories() {
-  const m = metaCache[$("#symbol").value], box = $("#stories");
-  if (!m || !m.ready) { box.replaceChildren(); return; }
-  const chips = [];
-  const c0 = document.createElement("span"); c0.className = "chip";
-  c0.textContent = "price " + m.price.toFixed(m.digits) + " · " + m.updated; chips.push(c0);
-  for (const [k, n] of TFS.slice(0, 3)) {
-    if (!(k in m.stories)) continue;
-    const s = m.stories[k], c = document.createElement("span"); c.className = "chip";
-    if (!s) c.textContent = n + ": no story line";
-    else { c.className += s.dir === "bear" ? " sell" : " buy";
-      c.textContent = n + ": " + (s.dir === "bear" ? "BEARISH" : "BULLISH") + " since " + s.since + " · rejected " + s.level.toFixed(m.digits); }
-    chips.push(c);
-  }
-  box.replaceChildren(...chips);
+function stories() {
+  const m = meta[$("#symbol").value], box = $("#stories");
+  if (!m || !m.ready) { box.replaceChildren(el("span", {class: "small"}, "Waiting for enough MT5 data…")); return; }
+  const NM = {MN1: "Monthly", W1: "Weekly", D1: "Daily", H4: "4-hour"};
+  box.replaceChildren(el("span", {class: "chip"}, `price ${m.price.toFixed(m.digits)} · ${m.updated}`),
+    ...Object.entries(m.stories).map(([k, s]) => !s ? el("span", {class: "chip"}, NM[k] + ": no story line")
+      : el("span", {class: "chip " + (s.dir === "bear" ? "sell" : "buy")}, `${NM[k]} ${s.dir === "bear" ? "bearish" : "bullish"} since ${s.since} · rejected ${s.level.toFixed(m.digits)}`)));
 }
-
 async function load() {
   const sym = $("#symbol").value; if (!sym) return;
-  const lv = $("#levels").value;
-  const extra = {bars: $("#bars").value, style: $("#style").value, theme: dark ? "dark" : "light",
-                 levels: lv === "all" ? 12 : lv, all_levels: lv === "all", t: Date.now()};
+  const q = new URLSearchParams({symbol: sym, tf, bars: $("#bars").value, style: $("#style").value, theme: dark ? "dark" : "light", all_levels: $("#levels").value === "all", t: Date.now()});
   const img = $("#img"), msg = $("#msg");
-  const url = "/api/chart.png?" + qs(extra);
   try {
-    const r = await fetch(url);
-    if (r.status === 401 || r.status === 503) { showKeyBox(apiKey ? "Wrong key" : ""); return; }
-    if (!r.ok) { let t = r.status; try { t = (await r.json()).detail; } catch (e) {}
-      img.style.display = "none"; msg.style.display = "block"; msg.textContent = t; $("#rows").replaceChildren(); return; }
-    const old = img.src; img.src = URL.createObjectURL(await r.blob()); if (old.startsWith("blob:")) URL.revokeObjectURL(old);
+    const r = await fetch(withKey("/api/chart.png?" + q));
+    if (r.status === 401 || r.status === 503) { await api("/api/status"); return; }
+    if (!r.ok) { let t = r.status; try { t = (await r.json()).detail; } catch (e) {} img.style.display = "none"; msg.style.display = "block"; msg.textContent = t; $("#rows").replaceChildren(); return; }
+    const old = blobUrl; blobUrl = URL.createObjectURL(await r.blob()); img.src = blobUrl; if (old) URL.revokeObjectURL(old);
     img.style.display = "block"; msg.style.display = "none";
-    $("#keybox").style.display = "none";
-    const d = await getJSON("/api/levels?" + qs({limit: 80}));
-    $("#lvlsum").textContent = "(" + d.total_active + " active, nearest " + d.levels.length + " shown)";
-    $("#rows").replaceChildren(...d.levels.map(l => { const tr = document.createElement("tr"); tr.className = l.role === "resistance" ? "R" : "S";
-      [l.price.toFixed(d.digits), l.role, l.kind, l.flips, (l.pips > 0 ? "+" : "") + l.pips, l.formed].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); });
-      return tr; }));
+    img.onclick = () => SNR.lightbox([{src: blobUrl, caption: `${sym} · ${TFS.find(t => t[0] === tf)[1]}`}], 0);
+    if (tf === "ZM") { $("#lvcard").style.display = "none"; } else {
+      $("#lvcard").style.display = "block";
+      const d = await api("/api/levels?" + new URLSearchParams({symbol: sym, tf, limit: 60}));
+      $("#lvtitle").textContent = `Levels on the ${TFS.find(t => t[0] === tf)[1]} timeframe (${d.total_active} active, most relevant first)`;
+      const CLS = {"key level": "Key level", "obstacle": "Obstacle", "context": "Level", "other": "Other recent level"};
+      $("#rows").replaceChildren(...d.levels.map(l => { const tr = el("tr", {class: l.cls === "key level" ? "key" : ""},
+        ...[l.name, CLS[l.cls], l.price.toFixed(d.digits), l.strength + "/100", (l.pips > 0 ? "+" : "") + l.pips, l.touches, l.flips, l.strong ? "STRONG: " + l.overlap : "", l.formed].map(v => el("td", {}, v))); return tr; }));
+    }
     $("#status").textContent = "updated " + new Date().toLocaleTimeString();
-  } catch (e) { $("#status").textContent = "backend not reachable"; }
+  } catch (e) { if (e.message !== "auth") $("#status").textContent = "backend not reachable"; }
 }
-
-async function init() {
-  try { const c = await (await fetch("/api/config")).json(); if (c.needs_key && !apiKey) showKeyBox(""); } catch (e) {}
-  try { await loadMeta(); } catch (e) { return; }
-  buildTabs(); renderStories(); load();
-}
-["symbol"].forEach(id => $("#" + id).onchange = () => { renderStories(); load(); });
+async function init() { try { await loadMeta(); } catch (e) { return; } tabs(); stories(); load(); }
+$("#symbol").onchange = () => { stories(); load(); };
 ["bars", "style", "levels"].forEach(id => $("#" + id).onchange = load);
+window.addEventListener("snr-synced", async () => { await loadMeta(); stories(); load(); });
 init();
-timer = setInterval(async () => { if (document.hidden || !$("#auto").checked) return;
-  try { await loadMeta(); renderStories(); } catch (e) {} load(); }, 30000);
+setInterval(async () => { if (document.hidden || !$("#auto").checked) return; try { await loadMeta(); stories(); } catch (e) {} load(); }, 30000);
 </script>
 </body>
 </html>

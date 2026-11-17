@@ -21,6 +21,8 @@ class SymbolState:
         self.last_online_msg = 0.0
         self.story_dirs: dict = {}
         self.last_signal: dict = {}
+        self.sync_pending = False       # the web UI asked for a fresh push from MT5
+        self.force_snapshot = False
 
     def set_meta(self, p):
         self.meta = {k: getattr(p, k) for k in (
@@ -62,6 +64,14 @@ class Store:
         if symbol not in self._d:
             self._d[symbol] = SymbolState(symbol)
         return self._d[symbol]
+
+    def request_sync(self) -> int:
+        n = 0
+        for st in self._d.values():
+            st.sync_pending = True
+            st.force_snapshot = True
+            n += 1
+        return n
 
     def peek(self, symbol: str):
         """Existing state or None (never creates one)."""

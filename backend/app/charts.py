@@ -1,14 +1,9 @@
-"""Per-timeframe level charts: ONE timeframe alone per image (PNG).
+"""Charts: ONE timeframe alone per image, plus a zone map of the key levels of every timeframe.
 
-What you see is exactly what the engine sees on that timeframe:
-  * the price line (closes, as in the course) or candles
-  * every active level it would use (red = resistance, green = support,
-    dashed = open-close level, thick = flipped RBS/SBR level)
-  * swing closes that created the levels (A peaks / V troughs)
-  * rejections (arrows), the story line (shaded) with its rejected level and QM level
-  * on setup alerts: entry / SL / TP and the refined zones
-
-Specs are plain snapshots (no live references), so rendering can happen outside the data lock.
+A timeframe chart shows only the key levels and obstacles the engine selected for it (most relevant,
+most recent, strongest), named in plain words with their strength score. Labels live in a side panel,
+so nothing is clipped. Setup alerts draw the entry zone, the targets and the invalidation level.
+Specs are plain snapshots (no live references) so rendering can happen outside the data lock.
 """
 from __future__ import annotations
 
@@ -16,7 +11,7 @@ import io
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 import matplotlib
@@ -28,24 +23,24 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 from matplotlib.ticker import FuncFormatter  # noqa: E402
 
-from . import config  # noqa: E402
-from .analysis import Analysis, analyze  # noqa: E402
-from .engine import Params, scan  # noqa: E402
+from . import config, zones  # noqa: E402
+from .analysis import Analysis, analyze_live  # noqa: E402
+from .engine import STORY_TFS, TF_NAME as _TF_NAME, Params, scan  # noqa: E402
 from .state import STORE, SymbolState  # noqa: E402
 
-TF_NAME = {"MN1": "Monthly", "W1": "Weekly", "D1": "Daily", "H4": "4-Hour", "H1": "1-Hour"}
+TF_NAME = {**_TF_NAME, "ZM": "Zone map"}
 DEFAULT_BARS = {"MN1": 40, "W1": 80, "D1": 90, "H4": 120, "H1": 120}
-MERGE = {"MN1": 0.0015, "W1": 0.0010, "D1": 0.0006, "H4": 0.0004, "H1": 0.0003}  # of price
-MAX_REJECTIONS = 15
-KIND_TXT = {"A": "A", "V": "V", "OC": "OC"}
+MAX_REJECTIONS = 12
+TF_COLOR = {"MN1": "#7c3aed", "W1": "#2563eb", "D1": "#0d9488", "H4": "#ea580c", "H1": "#64748b"}
+TF_WIDTH = {"MN1": 2.8, "W1": 2.3, "D1": 1.9, "H4": 1.5, "H1": 1.1}
 
 THEMES = {
     "light": dict(bg="#ffffff", fg="#1b1f24", muted="#667085", grid="#eceff3", line="#1f2a44",
                   up="#0f9d58", down="#d93025", res="#d93025", sup="#0f9d58", price="#2563eb",
-                  qm="#7c3aed", box="#ffffff"),
+                  qm="#7c3aed", plan="#2563eb"),
     "dark": dict(bg="#14171c", fg="#e8eaed", muted="#9aa3af", grid="#262c33", line="#9db4ff",
                  up="#4cc38a", down="#ff7b72", res="#ff7b72", sup="#4cc38a", price="#6ea8fe",
-                 qm="#c4a1ff", box="#14171c"),
+                 qm="#c4a1ff", plan="#6ea8fe"),
 }
 _lock = threading.Lock()   # matplotlib is not fully thread-safe
 
@@ -55,10 +50,11 @@ class ChartSpec:
     symbol: str
     tf: str
     bars: list                      # [(t, o, h, l, c)] visible window, oldest first
-    levels: List[dict]              # price, kind, role, t, flips
+    levels: List[dict]              # name, role, label, price, cls, strength, strong, t, flips
     rejections: list                # (visible_index, "bear"/"bull", price)
     story: Optional[dict]
     plan: Optional[dict]
+    zones: List[dict]
     context: str
     pip: float
     digits: int
@@ -67,15 +63,42 @@ class ChartSpec:
     last_t: int
     style: str = "line"
     theme: str = "light"
-    note: str = ""
     extra: dict = field(default_factory=dict)
 
 
-# ------------------------------------------------------------------ building a spec
+@dataclass
+class ZoneMapSpec:
+    symbol: str
+    bars: list                      # H4 window
+    items: List[dict]               # key levels of every timeframe
+    zones: List[dict]
+    context: str
+    digits: int
+    gmt_offset: int
+    price: float
+    last_t: int
+    theme: str = "light"
+    tf: str = "ZM"
+
+
+# ------------------------------------------------------------------ building specs
+def _ctx(a: Analysis) -> str:
+    parts = []
+    for k in STORY_TFS:
+        if k in a.stories:
+            s = a.stories[k]
+            parts.append(f"{TF_NAME[k]} " + ("no story line" if not s else ("BEARISH" if s.dir == "bear" else "BULLISH")))
+    return "Story lines: " + "  |  ".join(parts) if parts else ""
+
+
+def _ld(kl) -> dict:
+    return dict(name=kl.name, role=kl.role, label=kl.label, price=kl.price, cls=kl.cls, strength=kl.strength,
+                strong=kl.strong, t=kl.formed_t, flips=kl.flips, tf=kl.tf)
+
+
 def make_spec(st: SymbolState, a: Analysis, tf: str, bars: int = 0, style: Optional[str] = None,
-              theme: Optional[str] = None, max_levels: int = 12, plan: Optional[dict] = None,
-              all_levels: bool = False) -> ChartSpec:
-    allbars = st.series(tf)
+              theme: Optional[str] = None, plan: Optional[dict] = None, all_levels: bool = False) -> ChartSpec:
+    allbars = a.series.get(tf) or st.series(tf)
     if len(allbars) < 8:
         raise LookupError(f"{TF_NAME.get(tf, tf)} history is too short ({len(allbars)} candles)")
     n = bars or DEFAULT_BARS.get(tf, 100)
@@ -85,118 +108,149 @@ def make_spec(st: SymbolState, a: Analysis, tf: str, bars: int = 0, style: Optio
     p = Params(a.pip, config.PIVOT_N, config.QM_W, config.TAP_TOL_PIPS)
     rej, _, act = scan(tf, allbars, p, start=first)
 
-    last = vis[-1].c
-    lo, hi = min(b.l for b in vis), max(b.h for b in vis)
-    pad = (hi - lo) * 0.10
-    cand = [l for l in act if lo - pad <= l.price <= hi + pad]
-    merge = (2 * a.pip) if all_levels else max(MERGE.get(tf, 0.0005) * last, 0.022 * (hi - lo))
-
-    def pick(pool, cap):
-        out: List = []
-        for l in sorted(pool, key=lambda l: abs(l.price - last)):
-            if all(abs(l.price - c.price) > merge for c in out):
-                out.append(l)
-                if cap and len(out) >= cap:
-                    break
-        return out
-
-    half = max(1, (max_levels + 1) // 2)      # same number above and below price
-    cap = 0 if all_levels else half
-    chosen = pick([l for l in cand if l.price >= last], cap) + pick([l for l in cand if l.price < last], cap)
-
-    story = None
+    sel = list(a.selected.get(tf, []))
+    if plan and tf in a.levels:                   # classify by the SETUP's direction, not the Daily story line
+        got = zones.pick(a, tf, "bear" if plan["dir"] == "sell" else "bull")
+        sel = got["key"] + got["obstacles"]
+        zones.mark_strong(a, {tf: sel})
+    elif not sel:                                 # no story line serves this timeframe: strongest recent ones
+        got = zones.pick(a, tf, None)
+        sel = got["key"] + got["obstacles"]
+    levels = [_ld(k) for k in sel]
+    if all_levels:
+        have = {round(x["price"], 8) for x in levels}
+        from .engine import level_label, strength
+        for lv in act:
+            if round(lv.price, 8) not in have and len(allbars) - 1 - lv.idx <= 150:
+                levels.append(dict(name=f"{TF_NAME[tf]} {'resistance' if lv.role == 'R' else 'support'} ({level_label(lv)})",
+                                   role=lv.role, label=level_label(lv), price=lv.price, cls="context",
+                                   strength=strength(lv, len(allbars)), strong=False, t=lv.t, flips=lv.flips, tf=tf))
     s = a.stories.get(tf)
-    levels = [dict(price=l.price, kind=l.kind, role=l.role, t=l.t, flips=l.flips) for l in chosen]
+    story = None
     if s:
-        story = dict(dir=s.dir, bar_t=s.bar_t, eff=s.eff, level=s.level, kind=s.level_kind,
-                     qm=s.qm_level, ltf=s.ltf, same=s.same_bar)
-        if not any(abs(x["price"] - s.level) < 1e-9 for x in levels):   # always show the rejected level
-            match = next((l for l in act if abs(l.price - s.level) < 1e-9), None)
-            levels.append(dict(price=s.level, kind=s.level_kind, role=match.role if match else "R",
-                               t=match.t if match else vis[0].t, flips=match.flips if match else 0))
-
+        story = dict(dir=s.dir, bar_t=s.bar_t, eff=s.eff, level=s.level, qm=s.qm_level, ltf=s.ltf, same=s.same_bar,
+                     reason=zones.story_reason(a, tf, s))
+        if not any(abs(x["price"] - s.level) < 1e-9 for x in levels):
+            lab = zones.label_for(a, tf, s.level, s.level_kind)
+            role = "R" if s.dir == "bear" else "S"
+            levels.append(dict(name=f"{TF_NAME[tf]} {'resistance' if role == 'R' else 'support'} ({lab})", role=role,
+                               label=lab, price=s.level, cls="key level", strength=0, strong=False, t=vis[0].t,
+                               flips=0, tf=tf))
     shown = {round(x["price"], 8) for x in levels}
     rows = [(r.k - first, r.dir, r.price) for r in rej if r.k >= first and round(r.price, 8) in shown]
-    total_rej = len(rows)
-    rows = rows[-MAX_REJECTIONS:]      # keep images readable; the engine still counts all of them
-
-    ctx = []
-    for k in ("MN1", "W1", "D1"):
-        if k in a.stories:
-            st_k = a.stories[k]
-            ctx.append(f"{TF_NAME[k]} " + ("no story line" if not st_k else
-                                          ("BEARISH" if st_k.dir == "bear" else "BULLISH")))
+    total = len(rows)
+    rows = rows[-MAX_REJECTIONS:]
+    zs = [z for z in a.zones if (not z.get("tfs") or tf in z["tfs"])]
+    srv = zones.serving_story(a.stories, tf) if not plan else None
+    serves = (f"levels serve the {TF_NAME[srv.tf]} story line ({'bearish' if srv.dir == 'bear' else 'bullish'}): "
+              f"KEY = {'resistances' if srv.dir == 'bear' else 'supports'}, OBS = {'supports' if srv.dir == 'bear' else 'resistances'}"
+              if srv else "")
     return ChartSpec(
-        symbol=st.symbol, tf=tf, bars=[tuple(b) for b in vis], levels=levels, rejections=rows,
-        story=story, plan=plan, context="Story lines: " + "  |  ".join(ctx) if ctx else "",
-        pip=a.pip, digits=int(a.meta.get("digits", 2)), gmt_offset=int(a.meta.get("gmt_offset", 0)),
-        price=a.price, last_t=a.last_t, extra={"rejections_total": total_rej},
+        symbol=a.symbol, tf=tf, bars=[tuple(b) for b in vis], levels=levels, rejections=rows, story=story,
+        plan=plan, zones=zs, context=_ctx(a), pip=a.pip, digits=a.digits,
+        gmt_offset=int(a.meta.get("gmt_offset", 0)), price=a.price, last_t=a.last_t,
         style=(style or config.CHART_STYLE) if (style or config.CHART_STYLE) in ("line", "candles") else "line",
-        theme=(theme or config.CHART_THEME) if (theme or config.CHART_THEME) in THEMES else "light")
+        theme=(theme or config.CHART_THEME) if (theme or config.CHART_THEME) in THEMES else "light",
+        extra={"rejections_total": total, "serves": serves})
+
+
+CAPS = {"MN1": 3, "W1": 4, "D1": 4, "H4": 4, "H1": 3}
+
+
+def make_zonemap(st: SymbolState, a: Analysis, theme: Optional[str] = None) -> ZoneMapSpec:
+    h4 = (a.series.get("H4") or [])[-100:]
+    if len(h4) < 20:
+        raise LookupError("4-hour history is too short for the zone map")
+    lo, hi = min(b.l for b in h4), max(b.h for b in h4)
+    pad = (hi - lo) * 0.18
+    items = []
+    for tf in ("MN1", "W1", "D1", "H4", "H1"):
+        got = sorted(a.selected.get(tf, []), key=lambda k: (k.cls != "key level", -k.strength))[:CAPS[tf]]
+        for kl in got:
+            if lo - pad <= kl.price <= hi + pad:
+                items.append(_ld(kl))
+    zs = [z for z in a.zones if hi + pad >= z["low"] and lo - pad <= z["high"]]
+    return ZoneMapSpec(a.symbol, [tuple(b) for b in h4], items, zs, _ctx(a), a.digits,
+                       int(a.meta.get("gmt_offset", 0)), a.price, a.last_t,
+                       (theme or config.CHART_THEME) if (theme or config.CHART_THEME) in THEMES else "light")
 
 
 def spec_for(symbol: str, tf: str, bars: int = 0, style: Optional[str] = None, theme: Optional[str] = None,
-             max_levels: int = 12, all_levels: bool = False) -> ChartSpec:
+             all_levels: bool = False):
     """Live spec for the web UI (takes the data lock briefly)."""
     with STORE.lock:
         st = STORE.peek(symbol)
         if st is None or not st.ready():
             raise LookupError(f"not enough data yet for {symbol}: is the MT5 EA running?")
-        a = analyze(st)
+        a = analyze_live(st)
         if a is None:
             raise LookupError("not enough data yet")
-        return make_spec(st, a, tf, bars, style, theme, max_levels, None, all_levels)
+        if tf == "ZM":
+            return make_zonemap(st, a, theme)
+        return make_spec(st, a, tf, bars, style, theme, None, all_levels)
 
 
-def plan_from_signal(g) -> dict:
-    return dict(dir=g.dir, entry=g.entry, sl=g.sl, tp=g.tp, zones=g.zones, grade=g.grade)
+def plan_from_setup(su: dict) -> Optional[dict]:
+    e = su.get("refine") or su.get("entry")
+    if not e:
+        return None
+    return dict(id=su["id"], dir=su["dir"], title=su["title"], entry=e["price"],
+                zone=su["entry"]["price"],
+                targets=[(t["n"], t["price"], t["name"]) for t in su.get("targets", [])],
+                invalid=(su.get("invalid_if") or {}).get("price"))
 
 
-def levels_for(symbol: str, tf: str, limit: int = 80) -> dict:
-    """Table data: every active level on this timeframe, nearest first."""
+def levels_for(symbol: str, tf: str, limit: int = 60) -> dict:
+    """Table data for the charts page: selected key levels / obstacles first, then other recent levels."""
+    from .engine import level_label, strength
     with STORE.lock:
         st = STORE.peek(symbol)
         if st is None or not st.ready():
             raise LookupError("not enough data yet")
-        a = analyze(st)
-        allbars = st.series(tf)
-        if len(allbars) < 8:
+        a = analyze_live(st)
+        bars = a.series.get(tf) or []
+        if len(bars) < 8:
             raise LookupError(f"{TF_NAME.get(tf, tf)} history is too short")
-        p = Params(a.pip, config.PIVOT_N, config.QM_W, config.TAP_TOL_PIPS)
-        _, _, act = scan(tf, allbars, p, start=len(allbars))
-        price, pip, off = allbars[-1].c, a.pip, int(a.meta.get("gmt_offset", 0))
-        tz = _tz()
-        rows = []
-        for l in sorted(act, key=lambda l: abs(l.price - price))[:limit]:
-            rows.append(dict(price=l.price, role="resistance" if l.role == "R" else "support",
-                             kind={"A": "peak (A)", "V": "trough (V)", "OC": "open-close"}[l.kind],
-                             flips=l.flips, pips=round((l.price - price) / pip, 1),
-                             formed=_dt(l.t, off, tz).strftime("%d %b %Y %H:%M")))
-        return {"symbol": symbol, "tf": tf, "price": price, "digits": int(a.meta.get("digits", 2)),
-                "levels": rows, "total_active": len(act)}
+        price, pip, off, tz = a.price, a.pip, int(a.meta.get("gmt_offset", 0)), _tz()
+        rows, have = [], set()
+        for kl in sorted(a.selected.get(tf, []), key=lambda k: (k.cls != "key level", abs(k.price - price))):
+            have.add(round(kl.price, 8))
+            rows.append(dict(name=kl.name, price=kl.price, cls=kl.cls, strength=kl.strength, strong=kl.strong,
+                             overlap=kl.overlap, flips=kl.flips, touches=kl.touches,
+                             pips=round((kl.price - price) / pip, 1),
+                             formed=_dt(kl.formed_t, off, tz).strftime("%d %b %Y %H:%M")))
+        others = sorted([lv for lv in a.levels.get(tf, []) if round(lv.price, 8) not in have],
+                        key=lambda l: abs(l.price - price))[:max(0, limit - len(rows))]
+        for lv in others:
+            rows.append(dict(name=f"{TF_NAME[tf]} {'resistance' if lv.role == 'R' else 'support'} ({level_label(lv)})",
+                             price=lv.price, cls="other", strength=strength(lv, len(bars)), strong=False, overlap="",
+                             flips=lv.flips, touches=lv.touches, pips=round((lv.price - price) / pip, 1),
+                             formed=_dt(lv.t, off, tz).strftime("%d %b %Y %H:%M")))
+        return {"symbol": symbol, "tf": tf, "price": price, "digits": a.digits, "levels": rows,
+                "total_active": len(a.levels.get(tf, []))}
 
 
 def meta_for() -> dict:
-    """Which symbols have data, and the current story lines (for the charts page header)."""
+    """Which symbols have data, and the current story lines (for the page headers)."""
     out = {}
     with STORE.lock:
         for st in STORE.all():
             if not st.ready():
                 out[st.symbol] = {"ready": False}
                 continue
-            a = analyze(st)
+            a = analyze_live(st)
             tz, off = _tz(), int(st.meta.get("gmt_offset", 0))
             out[st.symbol] = {
-                "ready": True, "price": a.price, "digits": int(st.meta.get("digits", 2)),
+                "ready": True, "price": a.price, "digits": a.digits,
                 "updated": _dt(a.last_t, off, tz).strftime("%a %d %b %H:%M %Z"),
-                "bars": {tf: len(st.bars[tf]) for tf in TF_NAME},
+                "bars": {tf: len(st.bars[tf]) for tf in _TF_NAME},
                 "stories": {tf: (None if not s else dict(
                     dir=s.dir, since=_dt(s.eff, off, tz).strftime("%d %b %Y"), level=s.level,
                     qm=s.qm_level, same=s.same_bar)) for tf, s in a.stories.items()}}
     return out
 
 
-# ------------------------------------------------------------------ rendering
+# ------------------------------------------------------------------ rendering helpers
 def _tz():
     try:
         return ZoneInfo(config.DISPLAY_TZ)
@@ -213,7 +267,7 @@ def _spread(items: List[dict], gap: float, lo: float, hi: float):
     items.sort(key=lambda d: d["price"])
     for it in items:
         it["y"] = it["price"]
-    for _ in range(80):
+    for _ in range(120):
         moved = False
         for a, b in zip(items, items[1:]):
             d = b["y"] - a["y"]
@@ -228,53 +282,93 @@ def _spread(items: List[dict], gap: float, lo: float, hi: float):
             break
 
 
-def render(spec: ChartSpec) -> bytes:
+def _panel_labels(ax, labels: List[dict], span: float, ylo: float, yhi: float, fs: float):
+    _spread(labels, span * 0.036, ylo, yhi)
+    tr = ax.get_yaxis_transform()
+    for it in labels:
+        kw = dict(color=it["color"], fontsize=fs, va="center", ha="left",
+                  fontweight="bold" if it.get("bold") else "normal", annotation_clip=False)
+        if it.get("bg"):
+            kw["bbox"] = dict(boxstyle="round,pad=0.22", facecolor=it["bg"], edgecolor="none")
+        far = abs(it["y"] - it["price"]) > span * 0.004
+        ax.annotate(it["text"], xy=(1.0, it["price"]), xycoords=tr, xytext=(1.018, it["y"]), textcoords=tr,
+                    arrowprops=dict(arrowstyle="-", color=it.get("line") or it["color"], lw=0.6) if far else None, **kw)
+
+
+def _lab(it: dict, fmt) -> str:
+    tag = "KEY" if it["cls"] == "key level" else "OBS" if it["cls"] == "obstacle" else "···"
+    txt = f"{tag}  {it['name']}  {fmt(it['price'])}"
+    if it.get("strength"):
+        txt += f"  [{it['strength']}]"
+    if it.get("strong"):
+        txt += "  STRONG"
+    return txt
+
+
+def _setup_axes(fig, pal, ylo, yhi, n, xr, fmt, ticks, tf_fmt, bars, off, tz):
+    ax = fig.add_axes([0.05, 0.12, 0.60, 0.72], facecolor=pal["bg"])
+    ax.set_xlim(-1, xr)
+    ax.set_ylim(ylo, yhi)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: fmt(v)))
+    ax.grid(axis="y", color=pal["grid"], linewidth=0.8, zorder=0)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    for sp in ("left", "bottom"):
+        ax.spines[sp].set_color(pal["grid"])
+    ax.tick_params(colors=pal["muted"], labelsize=8.5)
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([_dt(bars[i][0], off, tz).strftime(tf_fmt) for i in ticks])
+    return ax
+
+
+def _header(fig, pal, title, sub, line3, price_txt):
+    fig.text(0.05, 0.945, title, color=pal["fg"], fontsize=17, fontweight="bold", ha="left", va="center")
+    fig.text(0.95, 0.945, price_txt, color=pal["muted"], fontsize=9.5, ha="right", va="center")
+    fig.text(0.05, 0.907, sub, color=pal["muted"], fontsize=9, ha="left", va="center")
+    if line3:
+        fig.text(0.05, 0.874, line3, color=pal["fg"], fontsize=9, ha="left", va="center")
+
+
+# ------------------------------------------------------------------ one timeframe
+def render(spec) -> bytes:
+    if isinstance(spec, ZoneMapSpec):
+        return render_zonemap(spec)
     pal = THEMES.get(spec.theme, THEMES["light"])
     bars, n = spec.bars, len(spec.bars)
-    tz, off = _tz(), spec.gmt_offset
-    d = spec.digits
+    tz, off, d = _tz(), spec.gmt_offset, spec.digits
     fmt = lambda v: f"{v:.{d}f}"
     tidx = {b[0]: i for i, b in enumerate(bars)}
+    plan = spec.plan if spec.plan and spec.plan.get("entry") else None
 
     ys = [b[3] for b in bars] + [b[2] for b in bars] + [spec.price]
-    plan = spec.plan if spec.plan and spec.plan.get("entry") else None
     if plan:
-        ys += [plan["entry"], plan["sl"], plan["tp"]]
+        ys += [plan["entry"]] + [t[1] for t in plan["targets"][:2]] + ([plan["invalid"]] if plan.get("invalid") else [])
     if spec.story:
-        ys += [spec.story["level"], spec.story["qm"]]
+        ys += [spec.story["level"]]
     ylo, yhi = min(ys), max(ys)
     span = (yhi - ylo) or 1.0
-    ylo, yhi = ylo - span * 0.06, yhi + span * 0.06
+    ylo, yhi = ylo - span * 0.07, yhi + span * 0.07
     span = yhi - ylo
-    xr = n + 1.5   # right edge of axes (levels extend here)
+    xr = n + 1.5
+    step = max(1, n // 8)
+    tf_fmt = {"MN1": "%b %Y", "W1": "%d %b %y", "D1": "%d %b", "H4": "%d %b %H:%M", "H1": "%d %b %H:%M"}[spec.tf]
 
     with _lock:
-        fig = Figure(figsize=(12, 6.8), dpi=100, facecolor=pal["bg"])
+        fig = Figure(figsize=(14, 7.4), dpi=100, facecolor=pal["bg"])
         FigureCanvasAgg(fig)
-        ax = fig.add_axes([0.055, 0.115, 0.775, 0.735], facecolor=pal["bg"])
-        ax.set_xlim(-1, xr)
-        ax.set_ylim(ylo, yhi)
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: fmt(v)))
-        ax.grid(axis="y", color=pal["grid"], linewidth=0.8, zorder=0)
-        for sp in ("top", "right"):
-            ax.spines[sp].set_visible(False)
-        for sp in ("left", "bottom"):
-            ax.spines[sp].set_color(pal["grid"])
-        ax.tick_params(colors=pal["muted"], labelsize=8.5)
+        ax = _setup_axes(fig, pal, ylo, yhi, n, xr, fmt, list(range(0, n, step)), tf_fmt, bars, off, tz)
 
-        # x ticks = dates
-        step = max(1, n // 8)
-        pos = list(range(0, n, step))
-        tf_fmt = {"MN1": "%b %Y", "W1": "%d %b %y", "D1": "%d %b", "H4": "%d %b %H:%M", "H1": "%d %b %H:%M"}[spec.tf]
-        ax.set_xticks(pos)
-        ax.set_xticklabels([_dt(bars[i][0], off, tz).strftime(tf_fmt) for i in pos])
+        for z in spec.zones:                      # strong zones: shaded bands
+            if yhi >= z["low"] and ylo <= z["high"]:
+                c = pal["res"] if z["role"] == "R" else pal["sup"]
+                lo, hi = z["low"], max(z["high"], z["low"] + span * 0.004)
+                ax.axhspan(lo, hi, color=c, alpha=0.10, zorder=1, linewidth=0)
 
-        # story shading + rejection candle
-        if spec.story:
+        if spec.story:                            # story-line shading + rejection candle
             s = spec.story
             col = pal["res"] if s["dir"] == "bear" else pal["sup"]
             xi = tidx.get(s["bar_t"], -1)
-            ax.axvspan(xi - 0.5, xr, color=col, alpha=0.07, zorder=1, linewidth=0)
+            ax.axvspan(xi - 0.5, xr, color=col, alpha=0.06, zorder=1, linewidth=0)
             if xi >= 0:
                 b = bars[xi]
                 bear = s["dir"] == "bear"
@@ -282,119 +376,139 @@ def render(spec: ChartSpec) -> bytes:
                             textcoords="offset points", ha="center", color=col, fontsize=8.5, fontweight="bold",
                             arrowprops=dict(arrowstyle="->", color=col, lw=1.2), zorder=8)
 
-        # price
-        if spec.style == "candles":
-            w = 0.6
+        if spec.style == "candles":               # price
             tiny = span * 0.0008
             for i, b in enumerate(bars):
                 c = pal["up"] if b[4] >= b[1] else pal["down"]
                 ax.vlines(i, b[3], b[2], colors=c, linewidth=1.0, zorder=4)
-                ax.add_patch(Rectangle((i - w / 2, min(b[1], b[4])), w, max(abs(b[4] - b[1]), tiny),
+                ax.add_patch(Rectangle((i - 0.3, min(b[1], b[4])), 0.6, max(abs(b[4] - b[1]), tiny),
                                        facecolor=c, edgecolor=c, zorder=5))
         else:
-            xs = list(range(n))
-            cl = [b[4] for b in bars]
+            xs, cl = list(range(n)), [b[4] for b in bars]
             ax.plot(xs, cl, color=pal["line"], linewidth=1.6, zorder=5, solid_joinstyle="round")
             ax.scatter(xs, cl, s=7, color=pal["line"], zorder=5)
 
-        # levels
-        labels = []
+        labels = []                               # key levels and obstacles
         for lv in spec.levels:
             res = lv["role"] == "R"
             col = pal["res"] if res else pal["sup"]
+            key = lv["cls"] == "key level"
             x0 = tidx.get(lv["t"], 0)
-            flipped = lv["flips"] > 0
-            is_story = bool(spec.story and abs(lv["price"] - spec.story["level"]) < 1e-9)
-            ax.hlines(lv["price"], x0, xr, colors=col, linewidth=2.6 if is_story else 1.3,
-                      linestyles="--" if lv["kind"] == "OC" else "-", alpha=0.95 if is_story else 0.85, zorder=3)
-            if lv["kind"] in ("A", "V") and lv["t"] in tidx:   # the swing close that created it
-                ax.scatter([tidx[lv["t"]]], [lv["price"]], s=44, marker="v" if lv["kind"] == "A" else "^",
-                           color=col, edgecolor=pal["bg"], linewidth=0.8, zorder=7)
-            txt = f"{fmt(lv['price'])}  {'R' if res else 'S'}·{KIND_TXT[lv['kind']]}"
-            if flipped:
-                txt += " flip"
-            if is_story:
-                txt += f"  ◀ story (rej. {'S' if spec.story['dir'] == 'bull' else 'R'})"
-            labels.append(dict(price=lv["price"], text=txt, color=col, bold=is_story, bbox=False))
+            ax.hlines(lv["price"], x0, xr, colors=col, linewidth=2.2 if key else 1.2,
+                      linestyles="--" if lv["label"] == "OCL" else "-", alpha=0.95 if key else 0.75, zorder=3)
+            if lv["label"] != "OCL" and lv["t"] in tidx:
+                ax.scatter([tidx[lv["t"]]], [lv["price"]], s=40, marker="v" if res else "^", color=col,
+                           edgecolor=pal["bg"], linewidth=0.8, zorder=7)
+            labels.append(dict(price=lv["price"], text=_lab(lv, fmt), color=col, bold=key or lv.get("strong")))
 
-        # rejections
-        for xi, direction, price in spec.rejections:
+        for xi, direction, price in spec.rejections:   # rejection arrows
             if 0 <= xi < n:
-                b = bars[xi]
-                off_y = span * 0.018
+                b, o = bars[xi], span * 0.018
                 if direction == "bear":
-                    ax.scatter([xi], [b[2] + off_y], s=30, marker="v", color=pal["res"], zorder=8, linewidth=0)
+                    ax.scatter([xi], [b[2] + o], s=30, marker="v", color=pal["res"], zorder=8, linewidth=0)
                 else:
-                    ax.scatter([xi], [b[3] - off_y], s=30, marker="^", color=pal["sup"], zorder=8, linewidth=0)
+                    ax.scatter([xi], [b[3] - o], s=30, marker="^", color=pal["sup"], zorder=8, linewidth=0)
 
-        # QM level of the story line
-        if spec.story:
-            q = spec.story["qm"]
-            ax.hlines(q, max(tidx.get(spec.story["bar_t"], 0), 0), xr, colors=pal["qm"], linewidth=1.3,
-                      linestyles=":", zorder=3)
-            labels.append(dict(price=q, text=f"{fmt(q)}  QM ({spec.story['ltf']})", color=pal["qm"], bold=False, bbox=False))
+        if spec.story:                            # QM level of the story line
+            labels.append(dict(price=spec.story["qm"], text=f"QM breakout level  {fmt(spec.story['qm'])}",
+                               color=pal["qm"]))
+            ax.hlines(spec.story["qm"], max(tidx.get(spec.story["bar_t"], 0), 0), xr, colors=pal["qm"],
+                      linewidth=1.2, linestyles=":", zorder=3)
 
-        # trade plan
-        if plan:
+        if plan:                                  # entry, targets, invalidation (no stop loss: you set it)
             xe = n - 1
-            e, sl, tp = plan["entry"], plan["sl"], plan["tp"]
-            ax.add_patch(Rectangle((xe, min(e, sl)), xr - xe, abs(e - sl), facecolor=pal["res"], alpha=0.14, zorder=2, linewidth=0))
-            ax.add_patch(Rectangle((xe, min(e, tp)), xr - xe, abs(e - tp), facecolor=pal["sup"], alpha=0.14, zorder=2, linewidth=0))
-            for val, nm, c, ls in ((e, "ENTRY", pal["price"], "-"), (sl, "SL", pal["res"], "--"), (tp, "TP", pal["sup"], "--")):
-                ax.hlines(val, xe, xr, colors=c, linewidth=1.6, linestyles=ls, zorder=6)
-                labels.append(dict(price=val, text=f"{fmt(val)}  {nm}", color=c, bold=True, bbox=False))
-            for z in plan.get("zones") or []:
-                ax.hlines(z["price"], max(0, n - 12), xr, colors=pal["price"], linewidth=1.0, linestyles=":", zorder=3)
-                labels.append(dict(price=z["price"], text=f"{fmt(z['price'])}  zone {z['tf']}", color=pal["price"], bold=False, bbox=False))
+            far = plan["targets"][-1][1] if plan["targets"] else plan["entry"]
+            ax.add_patch(Rectangle((xe, min(plan["entry"], far)), xr - xe, abs(far - plan["entry"]),
+                                   facecolor=pal["sup"], alpha=0.10, zorder=2, linewidth=0))
+            ax.hlines(plan["entry"], xe - 6, xr, colors=pal["plan"], linewidth=2.0, zorder=6)
+            labels.append(dict(price=plan["entry"], text=f"ENTRY (setup {plan['id']})  {fmt(plan['entry'])}",
+                               color=pal["plan"], bold=True))
+            for nn, p, nm in plan["targets"]:
+                ax.hlines(p, xe, xr, colors=pal["sup"], linewidth=1.4, linestyles=":", zorder=6)
+                labels.append(dict(price=p, text=f"T{nn}  {nm}  {fmt(p)}", color=pal["sup"], bold=True))
+            if plan.get("invalid"):
+                ax.hlines(plan["invalid"], xe - 6, xr, colors=pal["res"], linewidth=1.3, linestyles="--", zorder=6)
+                labels.append(dict(price=plan["invalid"], text=f"Invalid if closes beyond  {fmt(plan['invalid'])}",
+                                   color=pal["res"]))
 
-        # current price
         ax.hlines(spec.price, 0, xr, colors=pal["price"], linewidth=1.0, linestyles=(0, (2, 2)), zorder=6)
-        labels.append(dict(price=spec.price, text=f"{fmt(spec.price)}  price", color="#ffffff", bold=True,
-                           bbox=True, bg=pal["price"]))
+        labels.append(dict(price=spec.price, text=f"price  {fmt(spec.price)}", color="#ffffff", bold=True,
+                           bg=pal["price"], line=pal["price"]))
+        _panel_labels(ax, labels, span, ylo, yhi, 8.3)
 
-        # right-hand labels (de-overlapped)
-        _spread(labels, span * 0.034, ylo, yhi)
-        tr = ax.get_yaxis_transform()
-        for it in labels:
-            kw = dict(color=it["color"], fontsize=8.4, va="center", ha="left",
-                      fontweight="bold" if it["bold"] else "normal", annotation_clip=False)
-            if it.get("bbox"):
-                kw["bbox"] = dict(boxstyle="round,pad=0.22", facecolor=it["bg"], edgecolor="none")
-            ax.annotate(it["text"], xy=(1.0, it["price"]), xycoords=tr, xytext=(1.012, it["y"]), textcoords=tr,
-                        arrowprops=dict(arrowstyle="-", color=it["color"] if not it.get("bbox") else it["bg"], lw=0.6)
-                        if abs(it["y"] - it["price"]) > span * 0.004 else None, **kw)
-
-        # header / footer
         upd = _dt(spec.last_t, off, tz).strftime("%a %d %b %H:%M %Z")
-        fig.text(0.055, 0.945, f"{spec.symbol}  ·  {TF_NAME[spec.tf]}", color=pal["fg"], fontsize=17,
-                 fontweight="bold", ha="left", va="center")
-        fig.text(0.945, 0.945, f"price {fmt(spec.price)}   ·   {upd}", color=pal["muted"], fontsize=9.5, ha="right", va="center")
         tot = spec.extra.get("rejections_total", 0)
-        sub = (f"This timeframe alone · levels from closing prices · "
+        sub = (f"This timeframe alone · key levels and obstacles only · "
                f"{'candles' if spec.style == 'candles' else 'line of closes'} · last {n} candles"
                + (f" · last {len(spec.rejections)} of {tot} rejections shown" if tot > len(spec.rejections) else ""))
-        fig.text(0.055, 0.905, sub, color=pal["muted"], fontsize=9, ha="left", va="center")
+        if spec.extra.get("serves"):
+            sub = f"This timeframe alone · {spec.extra['serves']} · last {n} candles"
         line3 = spec.context
         if spec.story:
             s = spec.story
-            side = "BEARISH" if s["dir"] == "bear" else "BULLISH"
-            line3 = (f"{TF_NAME[spec.tf]} story line {side} since {_dt(s['eff'], off, tz).strftime('%d %b %Y')}: "
-                     f"rejected {fmt(s['level'])}, {s['ltf']} QM at {fmt(s['qm'])} "
-                     f"({'same candle' if s['same'] else 'following candle'})")
+            line3 = f"{TF_NAME[spec.tf]} story line {'BEARISH' if s['dir'] == 'bear' else 'BULLISH'} since {_dt(s['eff'], off, tz).strftime('%d %b %Y')}"
         if plan:
-            line3 = f"{plan['dir'].upper()} setup (grade {plan.get('grade', '?')})   " + (spec.context or "")
-        if line3:
-            fig.text(0.055, 0.872, line3, color=pal["fg"], fontsize=9, ha="left", va="center")
+            line3 = f"{plan['dir'].upper()} · Setup {plan['id']}: {plan['title']}"
+        _header(fig, pal, f"{spec.symbol}  ·  {TF_NAME[spec.tf]}", sub, line3, f"price {fmt(spec.price)}   ·   {upd}")
 
-        handles = [Line2D([0], [0], color=pal["res"], lw=1.6, label="Resistance (R)"),
-                   Line2D([0], [0], color=pal["sup"], lw=1.6, label="Support (S)"),
-                   Line2D([0], [0], color=pal["muted"], lw=1.4, ls="--", label="Open-close level (OC)"),
-                   Line2D([0], [0], color="none", label="flip = broken, now reused (RBS/SBR)"),
-                   Line2D([0], [0], color=pal["muted"], marker="v", ls="", ms=6, label="A / V swing close"),
-                   Line2D([0], [0], color=pal["res"], marker="v", ls="", ms=6, label="Rejection")]
+        handles = [Line2D([0], [0], color=pal["res"], lw=2.4, label="Resistance, key level (thick)"),
+                   Line2D([0], [0], color=pal["sup"], lw=2.4, label="Support, key level (thick)"),
+                   Line2D([0], [0], color=pal["muted"], lw=1.2, label="Obstacle (thin)"),
+                   Line2D([0], [0], color=pal["muted"], lw=1.4, ls="--", label="Dashed = open-close level (OCL)"),
+                   Line2D([0], [0], color=pal["muted"], marker="v", ls="", ms=6, label="Swing close (peak / trough)"),
+                   Line2D([0], [0], color=pal["muted"], lw=6, alpha=0.25, label="Shaded band = strong zone")]
         fig.legend(handles=handles, loc="lower center", ncol=6, frameon=False, fontsize=8,
-                   labelcolor=pal["muted"], bbox_to_anchor=(0.43, 0.005))
+                   labelcolor=pal["muted"], bbox_to_anchor=(0.5, 0.005))
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", facecolor=pal["bg"])
+        return buf.getvalue()
 
+
+# ------------------------------------------------------------------ zone map
+def render_zonemap(spec: ZoneMapSpec) -> bytes:
+    pal = THEMES.get(spec.theme, THEMES["light"])
+    bars, n = spec.bars, len(spec.bars)
+    tz, off, d = _tz(), spec.gmt_offset, spec.digits
+    fmt = lambda v: f"{v:.{d}f}"
+    lo, hi = min(b[3] for b in bars), max(b[2] for b in bars)
+    pad = (hi - lo) * 0.18
+    ys = [lo - pad, hi + pad] + [it["price"] for it in spec.items]
+    ylo, yhi = min(ys), max(ys)
+    span = (yhi - ylo) or 1.0
+    ylo, yhi = ylo - span * 0.03, yhi + span * 0.03
+    span = yhi - ylo
+    xr = n + 1.5
+    step = max(1, n // 8)
+
+    with _lock:
+        fig = Figure(figsize=(14, 7.4), dpi=100, facecolor=pal["bg"])
+        FigureCanvasAgg(fig)
+        ax = _setup_axes(fig, pal, ylo, yhi, n, xr, fmt, list(range(0, n, step)), "%d %b %H:%M", bars, off, tz)
+        for z in spec.zones:
+            c = pal["res"] if z["role"] == "R" else pal["sup"]
+            ax.axhspan(z["low"], max(z["high"], z["low"] + span * 0.004), color=c, alpha=0.13, zorder=1, linewidth=0)
+        xs, cl = list(range(n)), [b[4] for b in bars]
+        ax.plot(xs, cl, color=pal["line"], linewidth=1.5, zorder=5)
+        labels = []
+        for it in spec.items:
+            col = TF_COLOR[it["tf"]]
+            key = it["cls"] == "key level"
+            ax.hlines(it["price"], 0, xr, colors=col, linewidth=TF_WIDTH[it["tf"]] if key else TF_WIDTH[it["tf"]] * 0.6,
+                      linestyles="-" if key else "--", alpha=0.9, zorder=3)
+            labels.append(dict(price=it["price"], text=_lab(it, fmt), color=col, bold=bool(it.get("strong"))))
+        ax.hlines(spec.price, 0, xr, colors=pal["price"], linewidth=1.0, linestyles=(0, (2, 2)), zorder=6)
+        labels.append(dict(price=spec.price, text=f"price  {fmt(spec.price)}", color="#ffffff", bold=True,
+                           bg=pal["price"], line=pal["price"]))
+        _panel_labels(ax, labels, span, ylo, yhi, 8.6)
+        upd = _dt(spec.last_t, off, tz).strftime("%a %d %b %H:%M %Z")
+        _header(fig, pal, f"{spec.symbol}  ·  Zone map",
+                "Key levels of every timeframe, refined Monthly → Weekly → Daily → 4-hour → 1-hour · "
+                "shaded bands = strong zones (timeframes overlap)", spec.context, f"price {fmt(spec.price)}   ·   {upd}")
+        handles = [Line2D([0], [0], color=TF_COLOR[t], lw=3, label=_TF_NAME[t]) for t in ("MN1", "W1", "D1", "H4", "H1")]
+        handles += [Line2D([0], [0], color=pal["muted"], lw=2, label="Key level (solid)"),
+                    Line2D([0], [0], color=pal["muted"], lw=1.2, ls="--", label="Obstacle (dashed)")]
+        fig.legend(handles=handles, loc="lower center", ncol=7, frameon=False, fontsize=8,
+                   labelcolor=pal["muted"], bbox_to_anchor=(0.5, 0.005))
         buf = io.BytesIO()
         fig.savefig(buf, format="png", facecolor=pal["bg"])
         return buf.getvalue()

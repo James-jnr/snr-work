@@ -1,14 +1,19 @@
-"""Human-readable alert text (plain text so it works in Telegram and email)."""
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+"""Alert text in the mentor's wording. One report layout is used for every alert:
+story lines, where we are now, key levels, liquidity, then the setups below a heavy divider."""
+import textwrap
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
 
-from . import config
-from .analysis import Analysis, Signal, nearest
-from .engine import LTF_OF, Story
+from . import config, zones
+from .analysis import Analysis
+from .engine import LTF_OF, STORY_TFS, TF_NAME
 
-NAMES = {"MN1": "Monthly", "W1": "Weekly", "D1": "Daily"}
-KIND = {"A": "peak", "V": "trough", "OC": "open-close"}
+W = 76
+HEAVY = "═" * 54
+LIGHT = "─" * 54
+SETUP_BAR = "▓" * 54
+CLS_TXT = {"key level": "Key level", "obstacle": "Obstacle", "context": "Level"}
 
 
 def _tz():
@@ -26,148 +31,183 @@ def fmt_t(ts: int, meta: dict) -> str:
 
 def fmt_d(ts: int, meta: dict) -> str:
     utc = datetime.fromtimestamp(ts - int(meta.get("gmt_offset", 0)), timezone.utc)
-    return utc.astimezone(_tz()).strftime("%a %d %b")
+    return utc.astimezone(_tz()).strftime("%d %b")
 
 
 def px(a: Analysis, v: float) -> str:
-    return f"{v:.{int(a.meta.get('digits', 2))}f}"
+    return f"{v:.{a.digits}f}"
 
 
-def story_line(a: Analysis, tf: str, s: Optional[Story]) -> str:
-    if s is None:
-        return f"{NAMES[tf]}: no active story line"
-    arrow = "BEARISH 🔻" if s.dir == "bear" else "BULLISH 🔺"
-    q = "same candle (best)" if s.same_bar else "following candle (acceptable)"
-    return (f"{NAMES[tf]}: {arrow} since {fmt_d(s.eff, a.meta)}\n"
-            f"   rejected {px(a, s.level)} ({KIND[s.level_kind]}), "
-            f"{LTF_OF[tf]} QM at {px(a, s.qm_level)}, breakout in {q}")
+def wrap(text: str, indent: int = 2) -> str:
+    pad = " " * indent
+    return textwrap.fill(text, width=W, initial_indent=pad, subsequent_indent=pad)
+
+
+def dword(d: str) -> str:
+    return "bearish" if d == "bear" else "bullish"
 
 
 def alignment(a: Analysis) -> str:
-    dirs = [s.dir for s in a.stories.values() if s]
-    if len(dirs) >= 2 and len(set(dirs)) == 1 and len(dirs) == len([k for k in a.stories]):
-        return "ALL story lines aligned: strong momentum expected, bigger moves possible"
-    if len(set(dirs)) > 1:
-        return "Story lines conflict: expect pullbacks / consolidation, prefer the higher timeframe"
-    return "Partial picture: some timeframes have no active story line"
+    order = [tf for tf in ("MN1", "W1", "D1") if a.stories.get(tf)]
+    if not order:
+        return "No Monthly, Weekly or Daily story line is active."
+    dirs = {tf: a.stories[tf].dir for tf in order}
+    if len(order) >= 2 and len(set(dirs.values())) == 1:
+        names = ", ".join(TF_NAME[t] for t in order[:-1]) + " and " + TF_NAME[order[-1]]
+        return f"{names} all agree ({dword(dirs[order[0]])}): strong momentum expected, bigger moves are possible."
+    top = order[0]
+    opp = [TF_NAME[t] for t in order[1:] if dirs[t] != dirs[top]]
+    if opp:
+        verb = "is" if len(opp) == 1 else "are"
+        other = dword("bull" if dirs[top] == "bear" else "bear")
+        return (f"{TF_NAME[top]} is {dword(dirs[top])}, but {' and '.join(opp)} {verb} {other}, so the lower "
+                f"timeframes are pulling back against the {TF_NAME[top]} move: expect consolidation and prefer "
+                f"the higher timeframe.")
+    return f"Only the {TF_NAME[top]} story line is active ({dword(dirs[top])})."
 
 
-def _pips(a, x, y):
-    return abs(x - y) / a.pip
+def _mark(a: Analysis, tf: str, s, verify: Optional[Dict[str, str]]) -> str:
+    st = (verify or {}).get(f"{a.symbol}|{tf}|{s.dir}|{s.eff}", "unverified")
+    return {"verified": "[VERIFIED by you]", "rejected": "[REJECTED by you]"}.get(st, "[UNVERIFIED: tick it on the alert page]")
 
 
-def zones_block(a: Analysis, s: Story) -> str:
-    bear = s.dir == "bear"
-    entry_tf = LTF_OF[s.tf]
-    lv_hi, lv_lo = a.levels.get(s.tf, []), a.levels.get(entry_tf, [])
-    m = 2 * a.pip
-    if bear:
-        zones = nearest(lv_hi, a.price, "R", "above", 2, m)
-        refine = nearest(lv_lo, a.price, "R", "above", 3, m)
-        obs = nearest(lv_lo, a.price, "S", "below", 3, m)
-        zl, ol = "Sell zones", "Obstacles / take-profit (supports)"
-    else:
-        zones = nearest(lv_hi, a.price, "S", "below", 2, m)
-        refine = nearest(lv_lo, a.price, "S", "below", 3, m)
-        obs = nearest(lv_lo, a.price, "R", "above", 3, m)
-        zl, ol = "Buy zones", "Obstacles / take-profit (resistances)"
-    f = lambda ls, tf: ", ".join(f"{px(a, l.price)} ({_pips(a, l.price, a.price):.0f}p)" for l in ls) or "none near price"
-    return (f"{zl} on {NAMES[s.tf]}: {f(zones, s.tf)}\n"
-            f"Refine on {entry_tf}: {f(refine, entry_tf)}\n"
-            f"{ol} on {entry_tf}: {f(obs, entry_tf)}")
-
-
-def fmt_story_alert(a: Analysis, tf: str, s: Story) -> str:
-    side = "SELLS" if s.dir == "bear" else "BUYS"
-    return (f"{a.symbol}  price {px(a, a.price)}\n\n"
-            f"{story_line(a, tf, s)}\n\n"
-            f"Plan: look for {side} from {NAMES[tf]} zones, refine on {LTF_OF[tf]}/H4/H1, "
-            f"wait for the confirmation setup.\n\n{zones_block(a, s)}\n\n"
-            f"{alignment(a)}")
-
-
-def fmt_signal(a: Analysis, g: Signal) -> str:
-    c = g.confirm
-    word = "SELL 🔻" if g.dir == "sell" else "BUY 🔺"
-    rej = "resistance" if g.dir == "sell" else "support"
-    brk = "QM (structure break)" if c.break_type == "QM" else "open-close level break"
-    d1, w1, mn = a.stories.get("D1"), a.stories.get("W1"), a.stories.get("MN1")
-    want = "bear" if g.dir == "sell" else "bull"
-    chk = lambda s: "n/a" if s is None else ("agrees ✅" if s.dir == want else "against ❌")
-    zh = g.htf_zone
-    lines = [f"{a.symbol}  {word}  grade {g.grade}  ({g.session})", "",
-             f"At {zh['tf']} {rej} {px(a, zh['price'])} ({zh['pips']:.0f}p from the rejected level)",
-             f"H4 rejected {rej} {px(a, c.rej_price)} ({KIND[c.rej_kind]}), then H1 {brk} "
-             f"closed {fmt_t(c.break_t, a.meta)}",
-             f"Story lines: D1 {chk(d1)} | W1 {chk(w1)}" + (f" | MN1 {chk(mn)}" if mn else ""), ""]
-    if g.entry:
-        zs = "  /  ".join(f"{px(a, z['price'])} ({z['tf']} {KIND[z['kind']]})" for z in g.zones)
-        lines += [f"Entry zones (limit, enter on the NEXT candle into the zone): {zs}",
-                  f"Plan from {px(a, g.entry)}: SL {g.sl_pips:.0f}p -> {px(a, g.sl)} | "
-                  f"TP {g.tp_pips:.0f}p -> {px(a, g.tp)} (1:{g.tp_pips / g.sl_pips:.1f})"]
-        if g.obstacle:
-            o = g.obstacle
-            lines.append(f"Nearest obstacle: {o['tf']} level {px(a, o['price'])} ({o['pips']:.0f}p): "
-                         f"consider banking profit there")
-        if g.lots:
-            lines.append(f"Risk {g.risk_pct:.2f}% of {a.meta.get('balance', 0):.0f} "
-                         f"{a.meta.get('currency', '')} -> about {g.lots} lots")
-        else:
-            lines.append(f"Suggested risk {g.risk_pct:.2f}% (no balance/tick data to size lots)")
-    else:
-        lines.append(f"Suggested risk {g.risk_pct:.2f}%")
-    for w in g.warnings:
-        lines.append(f"⚠️ {w}")
-    lines += ["", "Manual checks: trend-line confluence (break & retest / continuation) at the zone, "
-                  "news today?, still outside Asia, no catching a falling knife."]
-    return "\n".join(lines)
-
-
-def levels_map(a: Analysis) -> str:
-    """Compact text version of the charts: nearest levels above/below price on each timeframe."""
-    lines = ["Level map (R = resistance, S = support, pips from price):"]
-    for tf in ("MN1", "W1", "D1", "H4"):
-        lv = a.levels.get(tf)
-        if not lv:
+def story_block(a: Analysis, verify=None) -> List[str]:
+    out = ["STORY LINES", LIGHT]
+    for tf in STORY_TFS:
+        if tf not in a.stories:
             continue
-        merge = 3 * a.pip
+        s = a.stories[tf]
+        nm = TF_NAME[tf].upper()
+        if not s:
+            if tf in a.story_rejected:
+                out += [f"{nm}: ended by you (rejected the {dword(a.story_rejected[tf].dir)} story line)", ""]
+            elif tf != "H4":
+                out += [f"{nm}: no active story line", ""]
+            continue
+        out.append(f"{nm} – {dword(s.dir).upper()} since {fmt_d(s.eff, a.meta)}   {_mark(a, tf, s, verify)}")
+        out.append(wrap(zones.story_reason(a, tf, s)))
+        pv = a.story_prev.get(tf)
+        if pv:
+            same = pv.dir == s.dir
+            out.append(wrap(f"{'Renewed' if same else 'This ended the previous'} {TF_NAME[tf]} "
+                            f"{dword(pv.dir)} story line (since {fmt_d(pv.eff, a.meta)})"
+                            f"{': same direction.' if same else '.'}"))
+        out.append("")
+    if not a.stories.get("H4") and "H4" in a.stories:
+        out += ["4-HOUR: no active story line yet", ""]
+    return out
 
-        def pick(pool):
-            out = []
-            for l in pool:
-                if not out or abs(l.price - out[-1].price) > merge:
-                    out.append(l)
-                if len(out) == 2:
-                    break
-            return out
-        above = pick(sorted([l for l in lv if l.price > a.price], key=lambda l: l.price))
-        below = pick(sorted([l for l in lv if l.price < a.price], key=lambda l: -l.price))
-        f = lambda l: f"{l.role} {px(a, l.price)} ({_pips(a, l.price, a.price):.0f}p)"
-        lines.append(f"{tf:>3}: " + "  ".join(f(l) for l in reversed(above)) + "  |  price  |  "
-                     + "  ".join(f(l) for l in below))
-    return "\n".join(lines)
+
+def where_block(a: Analysis) -> List[str]:
+    out = ["WHERE WE ARE NOW"]
+    for tf in STORY_TFS:
+        st = a.status.get(tf)
+        if st:
+            out.append(wrap(st["text"]))
+    out.append(wrap(alignment(a)))
+    return out + [""]
 
 
-def fmt_brief(a: Analysis, title: str) -> str:
-    out = [f"{a.symbol}  price {px(a, a.price)}  ({fmt_t(a.last_t, a.meta)})", ""]
-    for tf in ("MN1", "W1", "D1"):
-        if tf in a.stories:
-            out.append(story_line(a, tf, a.stories[tf]))
-    out += ["", alignment(a), ""]
-    for tf in ("W1", "D1"):
+def levels_block(a: Analysis) -> List[str]:
+    out = ["KEY LEVELS (only the relevant, recent ones)", LIGHT]
+    any_story = False
+    for tf in STORY_TFS:
         s = a.stories.get(tf)
-        if s:
-            out += [f"[{NAMES[tf]} story: {'sell' if s.dir == 'bear' else 'buy'} bias]", zones_block(a, s), ""]
-    out.append(levels_map(a))
-    return "\n".join(out).strip()
+        if not s:
+            continue
+        any_story = True
+        sel = zones.story_levels(a, tf, s.dir)
+        names = " and ".join(TF_NAME[t] for t in sel) or TF_NAME[LTF_OF[tf]]
+        out.append(f"{TF_NAME[tf]} story line ({dword(s.dir)}) uses {names} levels:")
+        rows = [kl for t in sel for kl in sel[t]]
+        if not rows:
+            out.append("  none near price")
+        for kl in sorted(rows, key=lambda k: (k.cls != "key level", abs(k.price - a.price))):
+            extra = "   (newest)" if kl.newest and kl.cls == "key level" else ""
+            out.append(f"  {CLS_TXT[kl.cls]:<9} {kl.name:<36} {px(a, kl.price)}   strength {kl.strength}/100{extra}")
+            if kl.strong:
+                out.append(f"  {'':<9} STRONG zone: overlaps {kl.overlap}")
+        out.append("")
+    if not any_story:
+        out += ["  No story line is active, so no levels are classified yet.", ""]
+    if a.zones:
+        near = sorted(a.zones, key=lambda z: abs((z["low"] + z["high"]) / 2 - a.price))[:4]
+        out.append("STRONG ZONES (timeframes overlapping):")
+        for z in near:
+            role = "resistance" if z["role"] == "R" else "support"
+            out.append(f"  {px(a, z['low'])} – {px(a, z['high'])}   {role}   {z['label']}")
+        out.append("")
+    return out
 
 
-def fmt_ranges(a: Analysis, d1_prev, w1_prev, asia) -> str:
+def liquidity_block(a: Analysis) -> List[str]:
+    lq, out = a.liquidity, []
+    if lq.get("prev_day"):
+        out.append(f"Previous day   high {px(a, lq['prev_day'][0])}   low {px(a, lq['prev_day'][1])}")
+    if lq.get("prev_week"):
+        out.append(f"Previous week  high {px(a, lq['prev_week'][0])}   low {px(a, lq['prev_week'][1])}")
+    if lq.get("asia"):
+        out.append(f"Asian range    high {px(a, lq['asia'][0])}   low {px(a, lq['asia'][1])}   (first two 4-hour candles)")
+    return (["LIQUIDITY"] + out + [""]) if out else []
+
+
+def _al(a, su) -> str:
     parts = []
-    if d1_prev:
-        parts.append(f"Prev day  H {px(a, d1_prev.h)}  L {px(a, d1_prev.l)}")
-    if w1_prev:
-        parts.append(f"Prev week H {px(a, w1_prev.h)}  L {px(a, w1_prev.l)}")
-    if asia:
-        parts.append(f"Asia range H {px(a, asia[0])}  L {px(a, asia[1])} (liquidity)")
-    return "\n".join(parts)
+    for tf in ("W1", "D1", "MN1", "H4"):
+        v = su["aligned"].get(tf)
+        s = a.stories.get(tf)
+        if v is None:
+            parts.append(f"{TF_NAME[tf]} –")
+        else:
+            parts.append(f"{TF_NAME[tf]} {dword(s.dir)} {'✔' if v else '✘'}")
+    return "  |  ".join(parts)
+
+
+def setup_block(a: Analysis) -> List[str]:
+    out = [SETUP_BAR, "SETUPS", SETUP_BAR, ""]
+    if a.limits.get("blocked"):
+        out += [f"⛔ {a.limits['blocked']}", ""]
+    for su in a.setups:
+        d = (su["dir"] or "").upper()
+        head = f"SETUP {su['id']} · " + (f"{d} · " if d else "") + su["title"]
+        out.append(head)
+        if su["status"] == "waiting" or not su["entry"]:
+            out += [wrap("Waiting: " + (su["reason"] or "conditions not met yet.")), ""]
+            continue
+        if su["status"] != "ready":
+            out.append(wrap({"late": "Late: ", "asia": "Asia: ", "blocked": "Blocked: ",
+                             "upgraded": "Upgraded: "}.get(su["status"], "") + su["reason"]))
+        if su.get("cf_text"):
+            out.append(wrap(su["cf_text"] + "."))
+        out.append(f"  Aligned with : {_al(a, su)}")
+        e = su["entry"]
+        tag = "  (newest)" if e["newest"] else ""
+        out.append(f"  Entry zone   : {px(a, e['price'])}  {e['name']}{tag}")
+        if e["strong"]:
+            out.append(f"                 STRONG zone: overlaps {e['overlap']}")
+        if su["refine"]:
+            r = su["refine"]
+            out.append(f"  Refine to    : {px(a, r['price'])}  {r['name']}" + ("  STRONG" if r["strong"] else ""))
+        if su["invalid_if"] and config.SHOW_INVALIDATION:
+            out.append(f"  Invalid if   : {su['invalid_if']['text']} {px(a, su['invalid_if']['price'])}")
+        out.append(f"  Enter by     : {fmt_t(su['enter_by'], a.meta)}")
+        out.append(textwrap.fill(su["stays_valid"], width=W, initial_indent="  Stays valid  : ",
+                                 subsequent_indent=" " * 17))
+        out.append("  Targets:")
+        if not su["targets"]:
+            out.append("    none found beyond the minimum distance")
+        for t in su["targets"]:
+            out.append(f"    T{t['n']}  {px(a, t['price'])}  {t['name']}  (~{t['pips']:.0f} pips)")
+            out.append(f"          {t['advice']}")
+        out.append("")
+    return out
+
+
+def fmt_report(a: Analysis, verify: Optional[Dict[str, str]] = None, headline: Optional[List[str]] = None) -> str:
+    out = [f"{a.symbol}   price {px(a, a.price)}   {fmt_t(a.last_t, a.meta)}", HEAVY]
+    if headline:
+        out += headline + [""]
+    out += story_block(a, verify) + where_block(a) + levels_block(a) + liquidity_block(a)
+    out += ["⏰ London and New York kill zones are the best entry times.", ""]
+    out += setup_block(a)
+    return "\n".join(out).rstrip()

@@ -31,7 +31,7 @@ MIN_GRADE = os.getenv("MIN_GRADE", "B").upper()  # A best, B, C weakest
 # --- filters ---
 ASIA_HOURS = _f("ASIA_HOURS", 8)       # first two H4 candles of the server day
 ENTRY_MAX_DIST_PIPS = _f("ENTRY_MAX_DIST_PIPS", 60)
-CONFIRM_WINDOW_H = int(_f("CONFIRM_WINDOW_H", 8))  # how long a setup stays fresh
+CONFIRM_WINDOW_H = int(_f("CONFIRM_WINDOW_H", 4))  # confirmation must happen inside the next 4-hour candle
 TAP_TOL_PIPS = _f("TAP_TOL_PIPS", 1.0)
 ZONE_PIPS = _f("ZONE_PIPS", 20)                  # H4 rejection must sit within this of a W1/D1 level
 HTF_LEVEL_AGE_D = int(_f("HTF_LEVEL_AGE_D", 120))  # ignore D1 levels older than this
@@ -64,3 +64,17 @@ OFFLINE_AFTER_SEC = int(_f("OFFLINE_AFTER_SEC", 600))
 CHARTS_IN_ALERTS = _b("CHARTS_IN_ALERTS", True)      # attach per-timeframe level charts to alerts
 CHART_THEME = os.getenv("CHART_THEME", "light")      # light | dark
 CHART_STYLE = os.getenv("CHART_STYLE", "line")       # line (closes, as in the course) | candles
+
+# --- v3: levels, zones, limits, interface ---
+ZONE_OVERLAP_PIPS = _f("ZONE_OVERLAP_PIPS", 0)      # 0 = automatic (gold 25, JPY 15, other forex 12)
+MIN_GAP_PIPS = _f("MIN_GAP_PIPS", 3)                # key level may sit this far on the wrong side of price
+MIN_TARGET_PIPS = _f("MIN_TARGET_PIPS", 8)          # ignore targets/obstacles closer than this
+APPROACH_PIPS = _f("APPROACH_PIPS", 0)              # alert when price is this close to a Daily-setup zone (0 = auto)
+MAX_TRADES_PER_DAY = int(_f("MAX_TRADES_PER_DAY", 3))      # mentorship rule
+MAX_CONSEC_LOSSES = int(_f("MAX_CONSEC_LOSSES", 3))        # mentorship rule
+SUPPRESS_WHEN_LIMIT = _b("SUPPRESS_WHEN_LIMIT", False)     # True = no setup alerts once a limit is hit
+HEARTBEAT_SEC = int(_f("HEARTBEAT_SEC", 15))
+LIVE_WINDOW_SEC = int(_f("LIVE_WINDOW_SEC", 45))
+SHOW_INVALIDATION = _b("SHOW_INVALIDATION", True)
+PORT = int(_f("PORT", 8000))
+BASE_URL = os.getenv("BASE_URL", "")          # e.g. http://192.168.1.20:8000 ; empty = detect the local network address

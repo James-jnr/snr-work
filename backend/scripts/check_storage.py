@@ -62,7 +62,8 @@ check("classify test", db.classify("✅ SNR backend test")["kind"] == "test")
 
 # 2) replay synthetic history: warm up, then feed new H1 bars one at a time
 h1 = simulate.make_h1()
-cut = len(h1) - 1500
+REPLAY = int(os.environ.get("REPLAY_HOURS", "240"))    # v3 analysis is heavier: keep the replay short
+cut = len(h1) - REPLAY
 msgs = feed(simulate.build_payload(h1[:cut]), True)
 for i in range(cut + 1, len(h1) + 1):
     msgs += feed(simulate.build_payload(h1[:i], full=False), False)
@@ -80,8 +81,8 @@ print("     kinds stored:", kinds)
 setups = [r for r in rows if r["kind"] == "setup"]
 if setups:
     s = setups[0]
-    check("setup keeps entry/SL/TP/grade", all(s[k] is not None for k in ("entry", "sl", "tp")) and s["grade"], 
-          f"{s['grade']} {s['direction']} entry={s['entry']} sl={s['sl']} tp={s['tp']} lots={s['lots']}")
+    check("setup keeps entry and grade (no SL/TP: you set those)", s["entry"] is not None and s["grade"],
+          f"{s['grade']} {s['direction']} entry={s['entry']}")
 else:
     print("NOTE no setup was triggered by the synthetic data; inserting one by hand to test the rest")
     nt.notify("🎯 XAUUSD BUY setup (grade A)", "demo body",

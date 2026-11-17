@@ -1,43 +1,71 @@
-# SNR Story Line System
+# SNR Story Line System (v3)
 
 ```
- MT5 (your PC)                Render                         You
-┌───────────────┐  HTTPS   ┌────────────────────┐  push   ┌────────────┐
-│ SNR_Feeder EA │ ───────► │ FastAPI + engine   │ ──────► │ Telegram   │
-│ closed candles│  /ingest │ levels, story lines│         │ + Email    │
-│ MN1 W1 D1 H4 H1│         │ confirmation setups│         └────────────┘
-└───────────────┘          └────────────────────┘
+ MT5 (your PC)               Backend (local or Render)               You
+┌───────────────┐  HTTPS   ┌─────────────────────────────┐  ┌──────────────────────────┐
+│ SNR_Feeder EA │ ───────► │ levels, story lines,        │─►│ Web pages (full width)   │
+│ closed candles│  /ingest │ key levels, 3 setups        │  │ Telegram + email         │
+│ MN1 W1 D1 H4 H1│ ◄─────── │ charts, alert database      │  │ Phone link (QR code)     │
+└───────────────┘  "sync"  └─────────────────────────────┘  └──────────────────────────┘
 ```
-The EA is read-only (never trades). The backend does all the analysis.
+The EA is read-only (it never trades). The backend does all the analysis.
 
-## What it alerts you about
-| Alert | When |
-|---|---|
-| Story line (Monthly/Weekly/Daily) | A new story line starts in the **opposite** direction to the previous one (direction flips only) |
-| Confirmation setup | H4 rejects an H4 level at a W1/D1 zone, then H1 QM or open-close break; graded A/B/C with entry zones, SL 20p, TP 100p, nearest obstacle, lot size |
-| Daily / weekly briefing | New D1 / W1 candle: story lines, alignment, zones, obstacles, prev day/week high-low, Asia range |
-| Feed offline / restored | No data from MT5 for 10 min during market hours |
-| Startup snapshot | After a full data load, so you can check it matches your own chart |
-
-## Run locally first (database + web page)
-Every alert is saved automatically to `backend/snr.db` (SQLite) **and** as a readable text file in
-`backend/setups/all/`. Browse, save (★), add notes and mark outcomes at **http://127.0.0.1:8000/ui**.
-Telegram/email are optional: with no tokens set they are simply skipped.
-
+## Run it locally (start here)
 ```
 cd backend
-python -m venv .venv
-.venv\Scripts\activate            # Windows   (Mac/Linux: source .venv/bin/activate)
+python -m venv .venv && .venv\Scripts\activate          (Mac/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
-copy .env.example .env             # Mac/Linux: cp .env.example .env   then set API_KEY
-uvicorn app.main:app --port 8000 --env-file .env
+copy .env.example .env                                    (then set API_KEY and DISPLAY_TZ=Africa/Nairobi)
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --env-file .env
 ```
-- Check storage works (no MT5 needed): `python scripts/check_storage.py`
-- Try the pipeline with fake data: `python scripts/simulate.py http://127.0.0.1:8000 <API_KEY>`
-- MT5: add `http://127.0.0.1:8000` under *Tools > Options > Expert Advisors > Allow WebRequest*, then set the EA
-  inputs `BackendUrl = http://127.0.0.1:8000/ingest` and `ApiKey` = your `API_KEY`.
-- `UI_PUBLIC=true` (in `.env.example`) opens the web page without a key: local use only. On Render it is `false`
-  and the page asks for the API key. Render also wipes files on restart unless you attach a persistent disk.
+`--host 0.0.0.0` lets your phone reach it. Open **http://127.0.0.1:8000/ui**. In MT5 allow WebRequest for
+`http://127.0.0.1:8000` and attach `mt5/SNR_Feeder.mq5` (v1.1) to an XAUUSD / EURUSD / GBPUSD chart with
+`BackendUrl=http://127.0.0.1:8000/ingest` and your `ApiKey`. No MT5 yet? `python scripts/simulate.py http://127.0.0.1:8000 <API_KEY>`.
+Telegram and email are optional: with neither set, everything still lands on the web pages.
+
+## What changed in v3
+**Pages**
+- **Alerts** (`/ui`): full-width list. Click a row to open that alert on **its own page** (`/alert/<id>`).
+- **Alert page:** report split into cards (story lines, where we are now, key levels, liquidity) and a **Setups** section
+  below a heavy divider; a **Verify** checkbox for every story line; your log (took it / outcome / notes); charts in a grid.
+  **Click any chart to enlarge it** (arrow keys switch charts, Esc closes).
+- **Heart** (top bar): glows red while MT5 is sending data, with the **next 4-hour candle close** and a countdown ("check again at ...").
+- **Sync now**: asks MT5 to push everything again (the EA checks every 15 s), then refreshes the pages and creates a fresh snapshot.
+- **Phone link**: a popup with the link and a QR code (same Wi-Fi). Windows may ask to allow port 8000 through the firewall.
+- **Charts** (`/charts`): Zone map, Monthly, Weekly, Daily, 4-hour, 1-hour, each timeframe alone.
+
+**Logic (mentorship wording)**
+- **Story lines on four timeframes**: Monthly, Weekly, Daily and **4-hour** (a 4-hour level is rejected, then a 1-hour breakout).
+  A new story line ends the previous one on that timeframe; same direction = renewed (quiet). Reports say why it started:
+  *"Weekly rejected the Weekly resistance (OCL) at 1.33945 with a wick and closed below it, and Daily gave a bearish breakout (QM) at 1.33040 in the following candle."*
+  and where it stands: *"Weekly is still bearish. It hit a Weekly support (Classic A/V) at ... (a Monthly story-line obstacle) and closed above it, but there is no Daily breakout, so it remains bearish."*
+- **Level names**: `Daily support (QM)`, `Monthly resistance (OCL)`, `Weekly support (Classic A/V)`. Each has a **strength score /100**
+  (timeframe weight, touches, role changes RBS/SBR, how recent).
+- **Key levels vs obstacles**: levels that support the story line are KEY LEVELS, the opposing ones are OBSTACLES.
+  Weekly story uses Daily levels, Daily story uses 4-hour and 1-hour levels, Monthly story uses Weekly levels, 4-hour story uses 1-hour levels.
+  Only the most relevant, most recent, strongest are kept.
+- **Strong zones**: overlap of Monthly+Weekly, Weekly+Daily, Daily+4-hour, Daily+1-hour. The newest 4-hour level near a Daily zone ranks highest.
+- **Three setups** in every report: (1) Daily story line, 4-hour entry refined to 1-hour; (2) 4-hour story line, 1-hour entry;
+  (3) confirmation (4-hour rejection, then 1-hour break). Each shows alignment with Weekly/Daily/Monthly, entry zone, invalidation,
+  **enter by**, **how long it stays valid** (depends on alignment) and **targets** (4-hour/1-hour roadblocks, Daily key levels,
+  previous day/week and Asian high/low expected to be swept). Setup 3 upgrades to Setup 2 when the 4-hour story line starts from the same rejection.
+- **Asia = the first two 4-hour candles** of the broker's day (counted as candles, not hours): no entries, and its high/low are liquidity targets.
+- **Verify / Reject**: untick = *unverified* (still alerts, tagged). **Reject** ends that story line in the engine.
+- **Daily limits** (mentorship): max 3 trades per day and stop after 3 losses in a row. Tick *I took this trade* and mark outcomes; a red banner appears when a limit is hit.
+- **No stop-loss or lot size** anywhere: you set those. A reference "invalid if" level is shown (`SHOW_INVALIDATION=false` hides it).
+
+## Tuning (all optional, in .env)
+`PIVOT_N_<TF>`, `QM_W_<TF>` (how big a swing counts), `ZONE_OVERLAP_PIPS` (0 = auto: gold 25, JPY 15, forex 12),
+`MIN_TARGET_PIPS` (ignore targets closer than this), `MIN_GAP_PIPS`, `MIN_GRADE` (A/B/C for confirmation alerts),
+`SIGNAL_COOLDOWN_H`, `APPROACH_PIPS`, `MAX_TRADES_PER_DAY`, `MAX_CONSEC_LOSSES`, `SUPPRESS_WHEN_LIMIT`, `CHARTS_IN_ALERTS`,
+`CHART_THEME`, `CHART_STYLE`, `BASE_URL`, `PIP_OVERRIDES`.
+
+## Tests
+```
+cd backend
+API_KEY=test python scripts/check_v3.py                 (end to end on simulated data, ~2 min)
+REPLAY_HOURS=200 API_KEY=test python scripts/check_storage.py
+```
 
 ## 1. Telegram
 1. Message **@BotFather** → `/newbot` → copy the token.
@@ -61,48 +89,17 @@ Turn on 2-step verification, create an **App Password**, use it as `SMTP_PASS` (
 5. One chart per symbol you want analysed. Check the Experts tab for errors.
 6. MT5 and the PC must stay on. For 24/5 coverage run MT5 on a VPS.
 
-## 5. Validate before you trust it (important)
-- `GET /storylines?symbol=XAUUSD&tf=D1&key=<API_KEY>` lists every detected Daily story line with level and date. Compare with your own chart/course examples (`tf=W1`, `tf=MN1` too).
-- `GET /state?symbol=XAUUSD&key=...` shows current story lines, signals and why setups were skipped.
-- `GET /brief?symbol=XAUUSD&send=true&key=...` pushes a briefing now.
-- Tune with env vars if it is too noisy/quiet: `PIVOT_N_<TF>`, `QM_W_<TF>`, `ZONE_PIPS`, `SIGNAL_COOLDOWN_H`, `MIN_GRADE`.
-- Run on a demo account first and keep a log of alerts vs outcomes.
-
 ## Pip size
-Gold uses **1 pip = $0.10** (course convention, so 20 pips = $2, 100 pips = $10). Override with `PIP_OVERRIDES={"XAUUSD":0.1}`.
-
-## Test without MT5
-`python backend/scripts/simulate.py https://<service>.onrender.com <API_KEY>` sends synthetic data and triggers the startup snapshot.
+Gold uses **1 pip = $0.10** (course convention). Override with `PIP_OVERRIDES={"XAUUSD":0.1}`.
 
 ## What is automated vs still manual
-**Automated:** closing-price levels (A/V/open-close), RBS/SBR, rejections, story lines (W1/D1/MN1) with QM on the lower timeframe, story-line end by opposite story line, obstacles, H4-reject + H1-break confirmation, Asia skip, grading, SL/TP, lot size, Friday/news-date warnings, briefings.
-**Manual (you decide):** trend-line confluence, high-impact news (use `NO_TRADE_DATES`), choosing between several zones, swing vs intraday, decision points (not covered in the course notes).
+**Automated:** closing-price levels, QM/OCL/Classic A/V naming, strength, rejections, story lines on four timeframes, status text,
+key levels vs obstacles, strong zones, three setups with validity and targets, Asia window, daily limits, charts, alerts.
+**Manual (you decide):** trend-line confluence, high-impact news, stop-loss and position size, final judgement on each story line (Verify box).
 
 ## Design choices that are mine, not the course's
-- Open-close level = close of the first of two same-colour candles at the start of a run.
-- QM is measured on **closing prices** (LH+LL, then close above the last LH).
-- Grading A/B/C and reduced risk (0.5%) when the weekly story line disagrees.
-- "At a zone" = H4 rejected level within `ZONE_PIPS` of a W1 or recent D1 level.
-- Alert cooldown of 8 h per direction.
+- Strength score formula and the "recent window" per timeframe; "strong zone" overlap tolerance.
+- OCL = close of the first of two same-colour candles at the start of a run; QM measured on closing prices.
+- Validity and target ordering rules per setup; grade A/B/C is only an alignment label (A = Weekly+Daily agree, B = Daily agrees, C = against Daily).
+- Alert cooldown: one setup alert per direction per `SIGNAL_COOLDOWN_H` hours.
 This is analysis tooling, not financial advice; the course's win-rate claims are unverified.
-
-## Charts: see the levels, one timeframe at a time
-Open **http://127.0.0.1:8000/charts** (link also in the Alerts page header).
-
-- Tabs: **Monthly · Weekly · Daily · 4-Hour · 1-Hour**. Each tab draws that timeframe ALONE: only the levels
-  the engine finds on that timeframe's own closing prices.
-- Red = resistance, green = support, dashed = open-close level, `flip` = broken and reused (RBS/SBR),
-  ▼/▲ on the line = the swing close that created a level, arrows = rejections, shaded band = story line
-  (with its rejected level and the QM level). Table underneath lists every active level with pips from price.
-- Options: number of candles, line-of-closes or candles, 8 / 12 / 20 / all levels, auto-refresh.
-- Image only: `GET /api/chart.png?symbol=XAUUSD&tf=W1&key=<API_KEY>` (`tf` = MN1, W1, D1, H4, H1).
-
-**In alerts:** every alert now carries charts. Setup = D1 + H4 + H1 with entry / SL / TP / zones drawn;
-story line = that timeframe + the one below; briefings and the startup snapshot = Monthly, Weekly, Daily, H4.
-They are sent to Telegram (album) and email (attachments), saved in `setups/charts/`, and shown inside each
-alert card in `/ui`. Briefings also include a text **level map** (nearest levels above/below price per timeframe).
-Turn off with `CHARTS_IN_ALERTS=false`.
-
-Use the charts to **validate the rules**: if a level, rejection or story line on the chart is not what you would
-mark by hand, that is exactly where to tune (`PIVOT_N_<TF>`, `QM_W_<TF>`, `ZONE_PIPS`) or change the logic.
-On Render, `setups/` lives on an ephemeral disk (use a Render Disk if you want to keep saved charts across deploys).
