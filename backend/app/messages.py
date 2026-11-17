@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 from . import config, zones
-from .analysis import Analysis
+from .analysis import Analysis, grade_for
 from .engine import LTF_OF, STORY_TFS, TF_NAME
 
 W = 76
@@ -169,7 +169,9 @@ def setup_block(a: Analysis) -> List[str]:
         out += [f"⛔ {a.limits['blocked']}", ""]
     for su in a.setups:
         d = (su["dir"] or "").upper()
-        head = f"SETUP {su['id']} · " + (f"{d} · " if d else "") + su["title"]
+        grade = grade_for(a, su["dir"]) if su["dir"] else ""
+        grade_label = f"GRADE {grade} · " if grade else ""
+        head = f"SETUP {su['id']} · " + grade_label + (f"{d} · " if d else "") + su["title"]
         out.append(head)
         if su["status"] == "waiting" or not su["entry"]:
             out += [wrap("Waiting: " + (su["reason"] or "conditions not met yet.")), ""]
