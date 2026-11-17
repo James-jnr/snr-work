@@ -1,0 +1,18 @@
+# Local Python environment and generated files
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local configuration and runtime data
+.env
+**/.env
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated setup snapshots and charts
+backend/setups/
+
+# Packaged copies and OS metadata
+*.zip
+.DS_Store
