@@ -80,7 +80,7 @@ print("     kinds stored:", kinds)
 setups = [r for r in rows if r["kind"] == "setup"]
 if setups:
     s = setups[0]
-    check("setup keeps entry/TP/grade and leaves SL user-defined", s["entry"] is not None and s["tp"] is not None and s["sl"] is None and s["grade"], 
+    check("setup keeps entry/SL/TP/grade", all(s[k] is not None for k in ("entry", "sl", "tp")) and s["grade"], 
           f"{s['grade']} {s['direction']} entry={s['entry']} sl={s['sl']} tp={s['tp']} lots={s['lots']}")
 else:
     print("NOTE no setup was triggered by the synthetic data; inserting one by hand to test the rest")

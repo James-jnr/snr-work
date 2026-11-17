@@ -14,14 +14,7 @@ class IngestPayload(BaseModel):
     vol_step: float = 0.01
     vol_max: float = 100.0
     balance: float = 0.0
-    equity: float = 0.0
-    margin: float = 0.0
-    free_margin: float = 0.0
-    margin_level: float = 0.0
     currency: str = "USD"
     full: bool = False
     # each row: [time, open, high, low, close]  (CLOSED candles only, server time)
     tfs: Dict[str, List[List[float]]] = Field(default_factory=dict)
-    positions: List[dict] = Field(default_factory=list)
-    deals: List[dict] = Field(default_factory=list)
-    sync_time: int = 0

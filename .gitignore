@@ -1,18 +1,11 @@
-# Local Python environment and generated files
-.venv/
-__pycache__/
-*.py[cod]
-
-# Local configuration and runtime data
 .env
 **/.env
-*.db
-*.sqlite
-*.sqlite3
-
-# Generated setup snapshots and charts
+backend/snr.db
 backend/setups/
+**/__pycache__/
+*.py[cod]
+snr_system_v2.zip
 
-# Packaged copies and OS metadata
+# Local environment and packaged archives
+**/.venv/
 *.zip
-.DS_Store

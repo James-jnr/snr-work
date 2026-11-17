@@ -23,9 +23,9 @@ class SymbolState:
         self.last_signal: dict = {}
 
     def set_meta(self, p):
-        self.meta = {k: getattr(p, k, 0 if k not in ("currency",) else "USD") for k in (
+        self.meta = {k: getattr(p, k) for k in (
             "gmt_offset", "digits", "point", "tick_size", "tick_value",
-            "vol_min", "vol_step", "vol_max", "balance", "equity", "margin", "free_margin", "margin_level", "currency", "server_time")}
+            "vol_min", "vol_step", "vol_max", "balance", "currency", "server_time")}
 
     def upsert(self, tfs: Dict[str, List[List[float]]]):
         for tf, rows in tfs.items():

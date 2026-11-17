@@ -2,10 +2,8 @@
 import logging
 import time
 from typing import List, Tuple
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 
-from . import charts, config, db
+from . import charts, config
 from .analysis import analyze
 from .engine import LTF_OF, TF_SEC
 from .messages import fmt_brief, fmt_ranges, fmt_signal, fmt_story_alert
@@ -19,11 +17,8 @@ def _ranges_text(st: SymbolState, a) -> str:
     d1, w1, h4 = st.series("D1"), st.series("W1"), st.series("H4")
     asia = None
     if h4:
-        # Convert broker timestamps to Nairobi local time before extracting 00:00-09:00.
-        offset = int(st.meta.get("gmt_offset", 0) or 0)
-        local = [(b, datetime.fromtimestamp(b.t-offset, timezone.utc).astimezone(ZoneInfo("Africa/Nairobi"))) for b in h4]
-        last_day = local[-1][1].date()
-        bars = [b for b, dt in local if dt.date() == last_day and 0 <= dt.hour < 9]
+        day0 = (h4[-1].t // 86400) * 86400
+        bars = [b for b in h4 if day0 <= b.t < day0 + int(config.ASIA_HOURS * 3600)]
         if len(bars) >= 2:
             asia = (max(b.h for b in bars), min(b.l for b in bars))
     return fmt_ranges(a, d1[-1] if d1 else None, w1[-1] if w1 else None, asia)
@@ -84,17 +79,14 @@ def on_new_bars(st: SymbolState, new_tfs: List[str]) -> List[Msg]:
             msgs.append((f"🧭 {st.symbol} {name} story line: {word}", fmt_story_alert(a, tf, s),
                          {"kind": "storyline", "symbol": st.symbol, "tf": tf,
                           "direction": "sell" if s.dir == "bear" else "buy",
-                          "level": s.level, "breakout_level": s.breakout_level},
+                          "level": s.level, "qm_level": s.qm_level},
                          _specs(st, a, (tf, LTF_OF[tf]))))
-    trade_state = db.mt5_trade_summary()
-    risk_blocked = (trade_state.get("trades_started_today", 0) >= 3 or
-                    trade_state.get("consecutive_losses", 0) >= 3)
     for g in a.signals:
         if g.key not in st.notified:
             st.notified.add(g.key)
-            if risk_blocked:
-                log.info("setup suppressed by account risk guard: %s", g.key)
-                continue
+            if g.confirm.break_t - st.last_signal.get(g.dir, 0) < config.SIGNAL_COOLDOWN_H * 3600:
+                continue         # cooldown: avoid a burst of near-identical alerts
+            st.last_signal[g.dir] = g.confirm.break_t
             word = "SELL" if g.dir == "sell" else "BUY"
             msgs.append((f"🎯 {st.symbol} {word} setup (grade {g.grade})", fmt_signal(a, g),
                          {"kind": "setup", "symbol": st.symbol, "direction": g.dir, "grade": g.grade,

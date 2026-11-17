@@ -40,7 +40,7 @@ def story_line(a: Analysis, tf: str, s: Optional[Story]) -> str:
     q = "same candle (best)" if s.same_bar else "following candle (acceptable)"
     return (f"{NAMES[tf]}: {arrow} since {fmt_d(s.eff, a.meta)}\n"
             f"   rejected {px(a, s.level)} ({KIND[s.level_kind]}), "
-            f"{LTF_OF[tf]} structural breakout (CHOCH) at {px(a, s.breakout_level)}, confirmed {q}")
+            f"{LTF_OF[tf]} QM at {px(a, s.qm_level)}, breakout in {q}")
 
 
 def alignment(a: Analysis) -> str:
@@ -90,7 +90,7 @@ def fmt_signal(a: Analysis, g: Signal) -> str:
     c = g.confirm
     word = "SELL 🔻" if g.dir == "sell" else "BUY 🔺"
     rej = "resistance" if g.dir == "sell" else "support"
-    brk = "structural breakout retest (CHOCH)"
+    brk = "QM (structure break)" if c.break_type == "QM" else "open-close level break"
     d1, w1, mn = a.stories.get("D1"), a.stories.get("W1"), a.stories.get("MN1")
     want = "bear" if g.dir == "sell" else "bull"
     chk = lambda s: "n/a" if s is None else ("agrees ✅" if s.dir == want else "against ❌")
@@ -98,13 +98,13 @@ def fmt_signal(a: Analysis, g: Signal) -> str:
     lines = [f"{a.symbol}  {word}  grade {g.grade}  ({g.session})", "",
              f"At {zh['tf']} {rej} {px(a, zh['price'])} ({zh['pips']:.0f}p from the rejected level)",
              f"H4 rejected {rej} {px(a, c.rej_price)} ({KIND[c.rej_kind]}), then H1 {brk} "
-             f"breakout {fmt_t(c.breakout_t, a.meta)}, retest rejection {fmt_t(c.retest_t, a.meta)}",
+             f"closed {fmt_t(c.break_t, a.meta)}",
              f"Story lines: D1 {chk(d1)} | W1 {chk(w1)}" + (f" | MN1 {chk(mn)}" if mn else ""), ""]
     if g.entry:
         zs = "  /  ".join(f"{px(a, z['price'])} ({z['tf']} {KIND[z['kind']]})" for z in g.zones)
         lines += [f"Entry zones (limit, enter on the NEXT candle into the zone): {zs}",
-                  f"Plan from {px(a, g.entry)}: set your SL manually in MT5 | "
-                  f"reference TP {g.tp_pips:.0f}p -> {px(a, g.tp)}"]
+                  f"Plan from {px(a, g.entry)}: SL {g.sl_pips:.0f}p -> {px(a, g.sl)} | "
+                  f"TP {g.tp_pips:.0f}p -> {px(a, g.tp)} (1:{g.tp_pips / g.sl_pips:.1f})"]
         if g.obstacle:
             o = g.obstacle
             lines.append(f"Nearest obstacle: {o['tf']} level {px(a, o['price'])} ({o['pips']:.0f}p): "
@@ -113,7 +113,7 @@ def fmt_signal(a: Analysis, g: Signal) -> str:
             lines.append(f"Risk {g.risk_pct:.2f}% of {a.meta.get('balance', 0):.0f} "
                          f"{a.meta.get('currency', '')} -> about {g.lots} lots")
         else:
-            lines.append(f"Suggested risk {g.risk_pct:.2f}%; position size is calculated after you set the SL in MT5")
+            lines.append(f"Suggested risk {g.risk_pct:.2f}% (no balance/tick data to size lots)")
     else:
         lines.append(f"Suggested risk {g.risk_pct:.2f}%")
     for w in g.warnings:

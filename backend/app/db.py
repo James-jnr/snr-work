@@ -34,23 +34,6 @@ CREATE TABLE IF NOT EXISTS alerts (
 CREATE INDEX IF NOT EXISTS ix_alerts_created ON alerts(created_at);
 CREATE INDEX IF NOT EXISTS ix_alerts_kind    ON alerts(kind, symbol);
 CREATE INDEX IF NOT EXISTS ix_alerts_saved   ON alerts(saved);
-CREATE TABLE IF NOT EXISTS mt5_positions (
-    ticket INTEGER PRIMARY KEY, position_id INTEGER NOT NULL DEFAULT 0,
-    symbol TEXT NOT NULL, side TEXT NOT NULL DEFAULT '', volume REAL NOT NULL DEFAULT 0,
-    price_open REAL, price_current REAL, sl REAL, tp REAL, profit REAL DEFAULT 0,
-    swap REAL DEFAULT 0, opened_at INTEGER, magic INTEGER DEFAULT 0,
-    comment TEXT DEFAULT '', updated_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS ix_mt5_positions_symbol ON mt5_positions(symbol);
-CREATE TABLE IF NOT EXISTS mt5_deals (
-    ticket INTEGER PRIMARY KEY, position_id INTEGER NOT NULL DEFAULT 0,
-    symbol TEXT NOT NULL, side TEXT NOT NULL DEFAULT '', entry_type TEXT NOT NULL DEFAULT '',
-    volume REAL NOT NULL DEFAULT 0, price REAL, profit REAL DEFAULT 0,
-    commission REAL DEFAULT 0, swap REAL DEFAULT 0, deal_time INTEGER,
-    magic INTEGER DEFAULT 0, comment TEXT DEFAULT '', updated_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS ix_mt5_deals_position ON mt5_deals(position_id);
-CREATE INDEX IF NOT EXISTS ix_mt5_deals_time ON mt5_deals(deal_time);
 """
 
 _init_lock = threading.Lock()
@@ -87,102 +70,6 @@ def init():
 def _ensure():
     if not _ready:
         init()
-
-
-# ---------------------------------------------------------------- MT5 read-only synchronization
-def sync_mt5(symbol: str, positions: List[dict], deals: List[dict], synced_at: int = 0) -> dict:
-    """Upsert the current position snapshot and append/update immutable deal tickets."""
-    _ensure()
-    now = int(synced_at or time.time())
-    with _conn() as c:
-        for p in positions:
-            ticket = int(p.get("ticket", 0) or 0)
-            if not ticket: continue
-            c.execute("""INSERT INTO mt5_positions
-                (ticket,position_id,symbol,side,volume,price_open,price_current,sl,tp,profit,swap,opened_at,magic,comment,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(ticket) DO UPDATE SET position_id=excluded.position_id,symbol=excluded.symbol,
-                side=excluded.side,volume=excluded.volume,price_open=excluded.price_open,price_current=excluded.price_current,
-                sl=excluded.sl,tp=excluded.tp,profit=excluded.profit,swap=excluded.swap,opened_at=excluded.opened_at,
-                magic=excluded.magic,comment=excluded.comment,updated_at=excluded.updated_at""",
-                (ticket,int(p.get("position_id",ticket) or ticket),str(p.get("symbol") or symbol),str(p.get("side","")),float(p.get("volume",0) or 0),
-                 _num(p.get("price_open")),_num(p.get("price_current")),_num(p.get("sl")),_num(p.get("tp")),
-                 _num(p.get("profit")) or 0,_num(p.get("swap")) or 0,int(p.get("opened_at",0) or 0),
-                 int(p.get("magic",0) or 0),str(p.get("comment", ""))[:512],now))
-        # The EA sends a complete open-position snapshot for this symbol.
-        active = [int(p.get("ticket",0) or 0) for p in positions if int(p.get("ticket",0) or 0)]
-        if active:
-            marks=",".join("?" for _ in active)
-            c.execute(f"DELETE FROM mt5_positions WHERE symbol=? AND ticket NOT IN ({marks})",[symbol,*active])
-        else:
-            c.execute("DELETE FROM mt5_positions WHERE symbol=?",(symbol,))
-        for d in deals:
-            ticket=int(d.get("ticket",0) or 0)
-            if not ticket: continue
-            c.execute("""INSERT INTO mt5_deals
-                (ticket,position_id,symbol,side,entry_type,volume,price,profit,commission,swap,deal_time,magic,comment,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(ticket) DO UPDATE SET position_id=excluded.position_id,symbol=excluded.symbol,
-                side=excluded.side,entry_type=excluded.entry_type,volume=excluded.volume,price=excluded.price,
-                profit=excluded.profit,commission=excluded.commission,swap=excluded.swap,deal_time=excluded.deal_time,
-                magic=excluded.magic,comment=excluded.comment,updated_at=excluded.updated_at""",
-                (ticket,int(d.get("position_id",0) or 0),str(d.get("symbol") or symbol),str(d.get("side","")),str(d.get("entry_type","")),
-                 float(d.get("volume",0) or 0),_num(d.get("price")),_num(d.get("profit")) or 0,
-                 _num(d.get("commission")) or 0,_num(d.get("swap")) or 0,int(d.get("deal_time",0) or 0),
-                 int(d.get("magic",0) or 0),str(d.get("comment", ""))[:512],now))
-        pos_count=c.execute("SELECT COUNT(*) FROM mt5_positions WHERE symbol=?",(symbol,)).fetchone()[0]
-        deal_count=c.execute("SELECT COUNT(*) FROM mt5_deals WHERE symbol=?",(symbol,)).fetchone()[0]
-    return {"positions":pos_count,"deals":deal_count,"synced_at":now}
-
-
-def mt5_snapshot(symbol: str = "") -> dict:
-    _ensure()
-    with _conn() as c:
-        if symbol:
-            positions=[dict(r) for r in c.execute("SELECT * FROM mt5_positions WHERE symbol=? ORDER BY opened_at",(symbol,))]
-            deals=[dict(r) for r in c.execute("SELECT * FROM mt5_deals WHERE symbol=? ORDER BY deal_time DESC LIMIT 500",(symbol,))]
-        else:
-            positions=[dict(r) for r in c.execute("SELECT * FROM mt5_positions ORDER BY opened_at")]
-            deals=[dict(r) for r in c.execute("SELECT * FROM mt5_deals ORDER BY deal_time DESC LIMIT 2000")]
-    return {"positions":positions,"deals":deals}
-
-
-def mt5_trade_summary(symbol: str = "", timezone_name: str = "Africa/Nairobi") -> dict:
-    """Aggregate deal tickets by MT5 position identifier; partial exits count once."""
-    from zoneinfo import ZoneInfo
-    from datetime import datetime, timezone
-    snap=mt5_snapshot(symbol)
-    open_ids={int(p.get("position_id") or p["ticket"]) for p in snap["positions"]}
-    grouped={}
-    for d in snap["deals"]:
-        pid=int(d.get("position_id") or 0)
-        if not pid: continue
-        g=grouped.setdefault(pid,{"position_id":pid,"symbol":d.get("symbol",symbol),"net":0.0,"last_close":0,"first_open":0,"has_exit":False,"deals":0})
-        g["net"] += float(d.get("profit") or 0)+float(d.get("commission") or 0)+float(d.get("swap") or 0)
-        g["deals"] += 1
-        if d.get("entry_type") == "in":
-            opened=int(d.get("deal_time") or 0)
-            g["first_open"] = opened if not g["first_open"] else min(g["first_open"],opened)
-        if d.get("entry_type") in ("out","out_by","inout"):
-            g["has_exit"]=True
-            g["last_close"]=max(g["last_close"],int(d.get("deal_time") or 0))
-    closed=[]
-    for g in grouped.values():
-        if g["has_exit"] and g["position_id"] not in open_ids:
-            g["outcome"]="won" if g["net"]>0 else "lost" if g["net"]<0 else "breakeven"
-            closed.append(g)
-    closed.sort(key=lambda x:x["last_close"])
-    today=datetime.now(ZoneInfo(timezone_name)).date()
-    todays=[g for g in closed if g["last_close"] and datetime.fromtimestamp(g["last_close"],timezone.utc).astimezone(ZoneInfo(timezone_name)).date()==today]
-    started_today=[g for g in grouped.values() if g["first_open"] and datetime.fromtimestamp(g["first_open"],timezone.utc).astimezone(ZoneInfo(timezone_name)).date()==today]
-    streak=0
-    for g in reversed(closed):
-        if g["outcome"]=="lost": streak+=1
-        elif g["outcome"]=="breakeven": continue
-        else: break
-    return {"trades_started_today":len(started_today),"completed_trades_today":len(todays),"today":today.isoformat(),
-            "consecutive_losses":streak,"closed_trades":closed,
-            "open_positions":snap["positions"]}
 
 
 # ---------------------------------------------------------------- classify

@@ -22,7 +22,6 @@ datetime        g_last[5];
 bool            g_needFull = true;
 datetime        g_lastSend = 0;
 datetime        g_nextTry  = 0;
-datetime        g_lastDealTime = 0;
 
 int BarsFor(const int i)
   {
@@ -57,80 +56,6 @@ string BarsJson(const int i, const int count)
    return s + "]";
   }
 
-
-string JsonEscape(const string value)
-  {
-   string out=value;
-   StringReplace(out,"\\","\\\\");
-   StringReplace(out,"\"","\\\"");
-   StringReplace(out,"\r"," ");
-   StringReplace(out,"\n"," ");
-   return out;
-  }
-
-string PositionsJson()
-  {
-   string s="[";
-   bool first=true;
-   for(int i=0;i<PositionsTotal();i++)
-     {
-      ulong ticket=PositionGetTicket(i);
-      if(ticket==0) continue;
-      if(!first) s+=",";
-      first=false;
-      long type=PositionGetInteger(POSITION_TYPE);
-      s+="{\"ticket\":"+IntegerToString((long)ticket);
-      s+=",\"position_id\":"+IntegerToString((long)PositionGetInteger(POSITION_IDENTIFIER));
-      s+=",\"symbol\":\""+JsonEscape(PositionGetString(POSITION_SYMBOL))+"\"";
-      s+=",\"side\":\""+(type==POSITION_TYPE_BUY?"buy":"sell")+"\"";
-      s+=",\"volume\":"+DoubleToString(PositionGetDouble(POSITION_VOLUME),4);
-      s+=",\"price_open\":"+DoubleToString(PositionGetDouble(POSITION_PRICE_OPEN),_Digits);
-      s+=",\"price_current\":"+DoubleToString(PositionGetDouble(POSITION_PRICE_CURRENT),_Digits);
-      s+=",\"sl\":"+DoubleToString(PositionGetDouble(POSITION_SL),_Digits);
-      s+=",\"tp\":"+DoubleToString(PositionGetDouble(POSITION_TP),_Digits);
-      s+=",\"profit\":"+DoubleToString(PositionGetDouble(POSITION_PROFIT),2);
-      s+=",\"swap\":"+DoubleToString(PositionGetDouble(POSITION_SWAP),2);
-      s+=",\"opened_at\":"+IntegerToString((long)PositionGetInteger(POSITION_TIME));
-      s+=",\"magic\":"+IntegerToString((long)PositionGetInteger(POSITION_MAGIC));
-      s+=",\"comment\":\""+JsonEscape(PositionGetString(POSITION_COMMENT))+"\"}";
-     }
-   return s+"]";
-  }
-
-string DealsJson(const bool full)
-  {
-   string s="[";
-   bool first=true;
-   datetime to=TimeTradeServer();
-   datetime from=full ? to-60*86400 : (g_lastDealTime>0 ? g_lastDealTime-5 : to-3600);
-   if(!HistorySelect(from,to)) return s+"]";
-   int total=HistoryDealsTotal();
-   for(int i=0;i<total;i++)
-     {
-      ulong ticket=HistoryDealGetTicket(i);
-      if(ticket==0) continue;
-      if(!first) s+=",";
-      first=false;
-      long type=HistoryDealGetInteger(ticket,DEAL_TYPE);
-      long entry=HistoryDealGetInteger(ticket,DEAL_ENTRY);
-      string side=(type==DEAL_TYPE_BUY?"buy":type==DEAL_TYPE_SELL?"sell":"other");
-      string entryName=(entry==DEAL_ENTRY_IN?"in":entry==DEAL_ENTRY_OUT?"out":entry==DEAL_ENTRY_INOUT?"inout":"out_by");
-      s+="{\"ticket\":"+IntegerToString((long)ticket);
-      s+=",\"position_id\":"+IntegerToString((long)HistoryDealGetInteger(ticket,DEAL_POSITION_ID));
-      s+=",\"symbol\":\""+JsonEscape(HistoryDealGetString(ticket,DEAL_SYMBOL))+"\"";
-      s+=",\"side\":\""+side+"\",\"entry_type\":\""+entryName+"\"";
-      s+=",\"volume\":"+DoubleToString(HistoryDealGetDouble(ticket,DEAL_VOLUME),4);
-      s+=",\"price\":"+DoubleToString(HistoryDealGetDouble(ticket,DEAL_PRICE),_Digits);
-      s+=",\"profit\":"+DoubleToString(HistoryDealGetDouble(ticket,DEAL_PROFIT),2);
-      s+=",\"commission\":"+DoubleToString(HistoryDealGetDouble(ticket,DEAL_COMMISSION),2);
-      s+=",\"swap\":"+DoubleToString(HistoryDealGetDouble(ticket,DEAL_SWAP),2);
-      s+=",\"deal_time\":"+IntegerToString((long)HistoryDealGetInteger(ticket,DEAL_TIME));
-      s+=",\"magic\":"+IntegerToString((long)HistoryDealGetInteger(ticket,DEAL_MAGIC));
-      s+=",\"comment\":\""+JsonEscape(HistoryDealGetString(ticket,DEAL_COMMENT))+"\"}";
-     }
-   return s+"]";
-  }
-
 string MetaJson(const bool full)
   {
    long off = (long)(TimeTradeServer() - TimeGMT());
@@ -146,10 +71,6 @@ string MetaJson(const bool full)
    s += ",\"vol_step\":"     + DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP), 4);
    s += ",\"vol_max\":"      + DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX), 4);
    s += ",\"balance\":"      + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2);
-   s += ",\"equity\":"       + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2);
-   s += ",\"margin\":"       + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN), 2);
-   s += ",\"free_margin\":"  + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_FREE), 2);
-   s += ",\"margin_level\":" + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL), 2);
    s += ",\"currency\":\""   + AccountInfoString(ACCOUNT_CURRENCY) + "\"";
    s += ",\"full\":"         + (full ? "true" : "false");
    return s;
@@ -196,7 +117,7 @@ bool Send(const bool full, const int mask)
       if(tfs != "") tfs += ",";
       tfs += "\"" + g_name[i] + "\":" + b;
      }
-   string json = "{" + MetaJson(full) + ",\"tfs\":{" + tfs + "},\"positions\":" + PositionsJson() + ",\"deals\":" + DealsJson(full) + ",\"sync_time\":" + IntegerToString((long)TimeTradeServer()) + "}";
+   string json = "{" + MetaJson(full) + ",\"tfs\":{" + tfs + "}}";
    string resp;
    if(!Post(json, resp))
       return false;
@@ -207,7 +128,6 @@ bool Send(const bool full, const int mask)
    if(full)
       for(int i = 0; i < 5; i++)
          g_last[i] = iTime(_Symbol, g_tf[i], 1);
-   g_lastDealTime = TimeTradeServer();
    return true;
   }
 

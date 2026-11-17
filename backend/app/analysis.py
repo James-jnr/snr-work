@@ -2,7 +2,6 @@
 import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional
 
 from . import config
@@ -41,7 +40,7 @@ class Signal:
     entry: Optional[float]
     sl: Optional[float]
     tp: Optional[float]
-    sl_pips: Optional[float]
+    sl_pips: float
     tp_pips: float
     obstacle: Optional[dict]
     lots: Optional[float]
@@ -87,26 +86,19 @@ def lots_for(meta: dict, risk_pct: float, sl_dist: float) -> Optional[float]:
     raw = bal * risk_pct / 100.0 / loss_per_lot
     step = float(meta.get("vol_step", 0.01)) or 0.01
     lots = math.floor(raw / step + 1e-9) * step
-    vmin = float(meta.get("vol_min", 0.01))
-    if lots < vmin:
-        return None  # never round upward beyond the user's risk budget
-    lots = min(lots, float(meta.get("vol_max", 100)))
-    decimals = max(0, min(8, len(str(step).split(".")[-1].rstrip("0"))))
-    return round(lots, decimals)
+    lots = max(float(meta.get("vol_min", 0.01)), min(lots, float(meta.get("vol_max", 100))))
+    return round(lots, 2)
 
 
-def server_dt(ts: int, meta: dict) -> datetime:
-    # MT5 candle timestamps are broker-server timestamps encoded as epoch values.
-    # Convert broker time to UTC using the offset sent by the EA, then to Nairobi.
-    utc_ts = ts - int(meta.get("gmt_offset", 0) or 0)
-    return datetime.fromtimestamp(utc_ts, timezone.utc).astimezone(ZoneInfo("Africa/Nairobi"))
+def server_dt(ts: int) -> datetime:
+    return datetime.fromtimestamp(ts, timezone.utc)  # server epoch treated as naive clock
 
 
 def analyze(st: SymbolState) -> Optional[Analysis]:
     if not st.ready():
         return None
     pip = pip_for(st.symbol, st.meta)
-    p = Params(pip=pip, pivot_n=config.PIVOT_N, structure_w=config.STRUCTURE_W, tap_tol_pips=config.TAP_TOL_PIPS)
+    p = Params(pip=pip, pivot_n=config.PIVOT_N, qm_w=config.QM_W, tap_tol_pips=config.TAP_TOL_PIPS)
     s = {tf: st.series(tf) for tf in ("MN1", "W1", "D1", "H4", "H1")}
     price = s["H1"][-1].c
     last_t = s["H1"][-1].t + TF_SEC["H1"]
@@ -144,9 +136,9 @@ def build_signal(a: Analysis, c: Confirm):
     if GRADE_RANK[grade] < GRADE_RANK.get(config.MIN_GRADE, 2):
         return f"{c.dir.upper()} setup skipped: grade {grade} below MIN_GRADE {config.MIN_GRADE}"
 
-    bt = server_dt(c.break_t, a.meta)
-    if config.ASIA_START_HOUR_EAT <= bt.hour < config.ASIA_RESTRICT_END_HOUR_EAT:
-        return f"{c.dir.upper()} confirmation skipped: first two Asian H4 candles (Nairobi {bt:%H:%M})"
+    bt = server_dt(c.break_t)
+    if bt.hour < config.ASIA_HOURS:
+        return f"{c.dir.upper()} setup skipped: confirmed during Asia (server hour {bt.hour})"
 
     pip, price = a.pip, a.price
     # the H4 rejection must happen at a relevant higher-timeframe zone (W1 / recent D1 level)
@@ -173,13 +165,13 @@ def build_signal(a: Analysis, c: Confirm):
     zones.sort(key=lambda z: abs(z["price"] - price))
     zones = zones[:2]
 
-    sl_pips = None  # user sets SL manually; lot sizing waits for actual SL input
+    sl_pips = min(config.SL_PIPS, config.SL_MAX_PIPS)
     entry = sl = tp = None
     obstacle = None
-    if c.break_type == "STRUCTURE_RETEST":
-        entry = c.break_level
+    if zones:
+        entry = zones[0]["price"]
         sgn = 1 if c.dir == "buy" else -1
-        sl = None
+        sl = entry - sgn * sl_pips * pip
         tp = entry + sgn * config.TP_PIPS * pip
         orole, oside = ("S", "below") if c.dir == "sell" else ("R", "above")
         cands = []
@@ -192,7 +184,7 @@ def build_signal(a: Analysis, c: Confirm):
         obstacle = cands[0] if cands else None
 
     risk = config.RISK_PCT if grade == "A" or (grade == "B" and not w_conflict) else config.RISK_PCT_REDUCED
-    lots = None  # calculated only after the user supplies the SL price
+    lots = lots_for(a.meta, risk, sl_pips * pip) if entry else None
 
     warn = []
     if grade == "B" and w_conflict:
@@ -203,10 +195,13 @@ def build_signal(a: Analysis, c: Confirm):
         warn.append("Daily story line does not support this direction: counter-trend, reduced risk")
     if bt.strftime("%Y-%m-%d") in config.NO_TRADE_DATES:
         warn.append("Date is in NO_TRADE_DATES (news day?)")
+    if bt.weekday() == 4 and bt.hour >= 16:
+        warn.append("Late Friday: take profits early, avoid holding over the weekend")
     if not zones:
         warn.append(f"No refined H4/H1 zone within {config.ENTRY_MAX_DIST_PIPS:.0f} pips: wait for a retest manually")
 
-    session = "London" if 10 <= bt.hour < 15 else "New York" if 15 <= bt.hour < 24 else "Off-session"
+    utc_h = ((c.break_t - int(a.meta.get("gmt_offset", 0))) // 3600) % 24
+    session = "London" if 7 <= utc_h < 12 else "New York" if 12 <= utc_h < 21 else "Off-session"
     key = f"CF|{c.dir}|{c.h4_t}|{c.break_t}"
     return Signal(c.dir, grade, risk, c, zones, entry, sl, tp, sl_pips, config.TP_PIPS,
                   obstacle, lots, warn, session, key, zone_hit)

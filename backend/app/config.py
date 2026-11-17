@@ -21,17 +21,17 @@ SETUPS_DIR = Path(os.getenv("SETUPS_DIR", str(BASE_DIR / "setups")))   # text co
 UI_PUBLIC = _b("UI_PUBLIC", False)   # True = web UI needs no key (local use only!)
 
 # --- trade plan (course defaults) ---
-# Stop loss is user-entered in MT5; the backend never invents an SL.
+SL_PIPS = _f("SL_PIPS", 20)            # course: 20 pips
+SL_MAX_PIPS = _f("SL_MAX_PIPS", 25)    # course: 25 max
 TP_PIPS = _f("TP_PIPS", 100)           # course: 100 pip intraday target
 RISK_PCT = _f("RISK_PCT", 1.0)         # course: 1% on confirmation entries
 RISK_PCT_REDUCED = _f("RISK_PCT_REDUCED", 0.5)  # my addition for weaker alignment
 MIN_GRADE = os.getenv("MIN_GRADE", "B").upper()  # A best, B, C weakest
 
 # --- filters ---
-ASIA_START_HOUR_EAT = 0
-ASIA_RESTRICT_END_HOUR_EAT = 8  # first two H4 candles, Nairobi time
+ASIA_HOURS = _f("ASIA_HOURS", 8)       # first two H4 candles of the server day
 ENTRY_MAX_DIST_PIPS = _f("ENTRY_MAX_DIST_PIPS", 60)
-CONFIRM_WINDOW_H = int(_f("CONFIRM_WINDOW_H", 4))  # retest must occur within four hours
+CONFIRM_WINDOW_H = int(_f("CONFIRM_WINDOW_H", 8))  # how long a setup stays fresh
 TAP_TOL_PIPS = _f("TAP_TOL_PIPS", 1.0)
 ZONE_PIPS = _f("ZONE_PIPS", 20)                  # H4 rejection must sit within this of a W1/D1 level
 HTF_LEVEL_AGE_D = int(_f("HTF_LEVEL_AGE_D", 120))  # ignore D1 levels older than this
@@ -42,8 +42,8 @@ NO_TRADE_DATES = {d.strip() for d in os.getenv("NO_TRADE_DATES", "").split(",") 
 # --- level / structure detection strength (tunable) ---
 PIVOT_N = {tf: int(_f(f"PIVOT_N_{tf}", d)) for tf, d in
            {"MN1": 1, "W1": 2, "D1": 2, "H4": 2, "H1": 1}.items()}
-STRUCTURE_W = {tf: int(_f(f"STRUCTURE_W_{tf}", _f(f"QM_W_{tf}", d))) for tf, d in
-               {"W1": 2, "D1": 2, "H4": 2, "H1": 2}.items()}
+QM_W = {tf: int(_f(f"QM_W_{tf}", d)) for tf, d in
+        {"W1": 2, "D1": 2, "H4": 2, "H1": 2}.items()}
 
 PIP_OVERRIDES = json.loads(os.getenv("PIP_OVERRIDES", "{}"))  # {"XAUUSD": 0.1}
 
@@ -56,7 +56,7 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
 EMAIL_TO = os.getenv("EMAIL_TO", "")
-DISPLAY_TZ = os.getenv("DISPLAY_TZ", "Africa/Nairobi")
+DISPLAY_TZ = os.getenv("DISPLAY_TZ", "UTC")
 
 OFFLINE_AFTER_SEC = int(_f("OFFLINE_AFTER_SEC", 600))
 

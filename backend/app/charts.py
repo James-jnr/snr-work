@@ -5,7 +5,7 @@ What you see is exactly what the engine sees on that timeframe:
   * every active level it would use (red = resistance, green = support,
     dashed = open-close level, thick = flipped RBS/SBR level)
   * swing closes that created the levels (A peaks / V troughs)
-  * rejections (arrows), the story line (shaded) with its rejected level and structural breakout level
+  * rejections (arrows), the story line (shaded) with its rejected level and QM level
   * on setup alerts: entry / SL / TP and the refined zones
 
 Specs are plain snapshots (no live references), so rendering can happen outside the data lock.
@@ -42,10 +42,10 @@ KIND_TXT = {"A": "A", "V": "V", "OC": "OC"}
 THEMES = {
     "light": dict(bg="#ffffff", fg="#1b1f24", muted="#667085", grid="#eceff3", line="#1f2a44",
                   up="#0f9d58", down="#d93025", res="#d93025", sup="#0f9d58", price="#2563eb",
-                  breakout="#7c3aed", box="#ffffff"),
+                  qm="#7c3aed", box="#ffffff"),
     "dark": dict(bg="#14171c", fg="#e8eaed", muted="#9aa3af", grid="#262c33", line="#9db4ff",
                  up="#4cc38a", down="#ff7b72", res="#ff7b72", sup="#4cc38a", price="#6ea8fe",
-                 breakout="#c4a1ff", box="#14171c"),
+                 qm="#c4a1ff", box="#14171c"),
 }
 _lock = threading.Lock()   # matplotlib is not fully thread-safe
 
@@ -82,7 +82,7 @@ def make_spec(st: SymbolState, a: Analysis, tf: str, bars: int = 0, style: Optio
     n = max(20, min(n, len(allbars))) if len(allbars) >= 20 else len(allbars)
     first = len(allbars) - n
     vis = allbars[first:]
-    p = Params(a.pip, config.PIVOT_N, config.STRUCTURE_W, config.TAP_TOL_PIPS)
+    p = Params(a.pip, config.PIVOT_N, config.QM_W, config.TAP_TOL_PIPS)
     rej, _, act = scan(tf, allbars, p, start=first)
 
     last = vis[-1].c
@@ -109,7 +109,7 @@ def make_spec(st: SymbolState, a: Analysis, tf: str, bars: int = 0, style: Optio
     levels = [dict(price=l.price, kind=l.kind, role=l.role, t=l.t, flips=l.flips) for l in chosen]
     if s:
         story = dict(dir=s.dir, bar_t=s.bar_t, eff=s.eff, level=s.level, kind=s.level_kind,
-                     breakout=s.breakout_level, ltf=s.ltf, same=s.same_bar)
+                     qm=s.qm_level, ltf=s.ltf, same=s.same_bar)
         if not any(abs(x["price"] - s.level) < 1e-9 for x in levels):   # always show the rejected level
             match = next((l for l in act if abs(l.price - s.level) < 1e-9), None)
             levels.append(dict(price=s.level, kind=s.level_kind, role=match.role if match else "R",
@@ -148,10 +148,7 @@ def spec_for(symbol: str, tf: str, bars: int = 0, style: Optional[str] = None, t
         return make_spec(st, a, tf, bars, style, theme, max_levels, None, all_levels)
 
 
-def plan_from_signal(g) -> Optional[dict]:
-    # SL is deliberately user-defined; do not draw a fictitious risk box.
-    if g.entry is None or g.sl is None or g.tp is None:
-        return None
+def plan_from_signal(g) -> dict:
     return dict(dir=g.dir, entry=g.entry, sl=g.sl, tp=g.tp, zones=g.zones, grade=g.grade)
 
 
@@ -165,7 +162,7 @@ def levels_for(symbol: str, tf: str, limit: int = 80) -> dict:
         allbars = st.series(tf)
         if len(allbars) < 8:
             raise LookupError(f"{TF_NAME.get(tf, tf)} history is too short")
-        p = Params(a.pip, config.PIVOT_N, config.STRUCTURE_W, config.TAP_TOL_PIPS)
+        p = Params(a.pip, config.PIVOT_N, config.QM_W, config.TAP_TOL_PIPS)
         _, _, act = scan(tf, allbars, p, start=len(allbars))
         price, pip, off = allbars[-1].c, a.pip, int(a.meta.get("gmt_offset", 0))
         tz = _tz()
@@ -195,7 +192,7 @@ def meta_for() -> dict:
                 "bars": {tf: len(st.bars[tf]) for tf in TF_NAME},
                 "stories": {tf: (None if not s else dict(
                     dir=s.dir, since=_dt(s.eff, off, tz).strftime("%d %b %Y"), level=s.level,
-                    breakout=s.breakout_level, same=s.same_bar)) for tf, s in a.stories.items()}}
+                    qm=s.qm_level, same=s.same_bar)) for tf, s in a.stories.items()}}
     return out
 
 
@@ -244,7 +241,7 @@ def render(spec: ChartSpec) -> bytes:
     if plan:
         ys += [plan["entry"], plan["sl"], plan["tp"]]
     if spec.story:
-        ys += [spec.story["level"], spec.story["breakout"]]
+        ys += [spec.story["level"], spec.story["qm"]]
     ylo, yhi = min(ys), max(ys)
     span = (yhi - ylo) or 1.0
     ylo, yhi = ylo - span * 0.06, yhi + span * 0.06
@@ -330,12 +327,12 @@ def render(spec: ChartSpec) -> bytes:
                 else:
                     ax.scatter([xi], [b[3] - off_y], s=30, marker="^", color=pal["sup"], zorder=8, linewidth=0)
 
-        # Structural breakout level of the story line
+        # QM level of the story line
         if spec.story:
-            q = spec.story["breakout"]
-            ax.hlines(q, max(tidx.get(spec.story["bar_t"], 0), 0), xr, colors=pal["breakout"], linewidth=1.3,
+            q = spec.story["qm"]
+            ax.hlines(q, max(tidx.get(spec.story["bar_t"], 0), 0), xr, colors=pal["qm"], linewidth=1.3,
                       linestyles=":", zorder=3)
-            labels.append(dict(price=q, text=f"{fmt(q)}  CHOCH ({spec.story['ltf']})", color=pal["breakout"], bold=False, bbox=False))
+            labels.append(dict(price=q, text=f"{fmt(q)}  QM ({spec.story['ltf']})", color=pal["qm"], bold=False, bbox=False))
 
         # trade plan
         if plan:
@@ -382,7 +379,7 @@ def render(spec: ChartSpec) -> bytes:
             s = spec.story
             side = "BEARISH" if s["dir"] == "bear" else "BULLISH"
             line3 = (f"{TF_NAME[spec.tf]} story line {side} since {_dt(s['eff'], off, tz).strftime('%d %b %Y')}: "
-                     f"rejected {fmt(s['level'])}, {s['ltf']} structural breakout at {fmt(s['breakout'])} "
+                     f"rejected {fmt(s['level'])}, {s['ltf']} QM at {fmt(s['qm'])} "
                      f"({'same candle' if s['same'] else 'following candle'})")
         if plan:
             line3 = f"{plan['dir'].upper()} setup (grade {plan.get('grade', '?')})   " + (spec.context or "")
