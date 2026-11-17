@@ -1,0 +1,7 @@
+.env
+**/.env
+backend/snr.db
+backend/setups/
+**/__pycache__/
+*.py[cod]
+snr_system_v2.zip
