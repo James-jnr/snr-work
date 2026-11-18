@@ -1,10 +1,10 @@
 //+------------------------------------------------------------------+
 //| SNR_Feeder.mq5                                                   |
-//| Sends CLOSED candles (MN1, W1, D1, H4, H1) to the analysis       |
+//| Sends CLOSED candles (MN1, W1, D1, H4, H1, M15) to the analysis       |
 //| backend. It never places, modifies or closes trades.             |
 //+------------------------------------------------------------------+
 #property copyright "SNR Story Line System"
-#property version   "1.10"
+#property version   "1.20"
 #property description "Data feeder for the SNR story-line backend (read-only, no trading)."
 
 input string BackendUrl   = "https://YOUR-SERVICE.onrender.com/ingest"; // must be whitelisted in MT5 options
@@ -15,10 +15,11 @@ input int    BarsW1       = 120;
 input int    BarsD1       = 300;
 input int    BarsH4       = 500;
 input int    BarsH1       = 700;
+input int    BarsM15      = 600;   // 15-min candles for Setup 4 (about 6 days)
 
-ENUM_TIMEFRAMES g_tf[5]   = {PERIOD_MN1, PERIOD_W1, PERIOD_D1, PERIOD_H4, PERIOD_H1};
-string          g_name[5] = {"MN1", "W1", "D1", "H4", "H1"};
-datetime        g_last[5];
+ENUM_TIMEFRAMES g_tf[6]   = {PERIOD_MN1, PERIOD_W1, PERIOD_D1, PERIOD_H4, PERIOD_H1, PERIOD_M15};
+string          g_name[6] = {"MN1", "W1", "D1", "H4", "H1", "M15"};
+datetime        g_last[6];
 bool            g_needFull = true;
 datetime        g_lastSend = 0;
 datetime        g_nextTry  = 0;
@@ -31,7 +32,8 @@ int BarsFor(const int i)
       case 1: return BarsW1;
       case 2: return BarsD1;
       case 3: return BarsH4;
-      default: return BarsH1;
+      case 4: return BarsH1;
+      default: return BarsM15;
      }
   }
 
@@ -104,13 +106,14 @@ bool Post(const string json, string &resp)
 bool Send(const bool full, const int mask)
   {
    string tfs = "";
-   for(int i = 0; i < 5; i++)
+   for(int i = 0; i < 6; i++)
      {
       if(!full && ((mask >> i) & 1) == 0)
          continue;
       string b = BarsJson(i, full ? BarsFor(i) : 4);
       if(b == "")
         {
+         if(full && i == 5) continue;   // 15-min history is optional: do not block the full load
          if(full) { Print("SNR_Feeder: history for ", g_name[i], " not ready yet, retrying..."); return false; }
          continue;
         }
@@ -126,7 +129,7 @@ bool Send(const bool full, const int mask)
    else if(full)
       g_needFull = false;
    if(full)
-      for(int i = 0; i < 5; i++)
+      for(int i = 0; i < 6; i++)
          g_last[i] = iTime(_Symbol, g_tf[i], 1);
    return true;
   }
@@ -165,7 +168,7 @@ void OnTimer()
      }
 
    int mask = 0;
-   for(int i = 0; i < 5; i++)
+   for(int i = 0; i < 6; i++)
      {
       datetime t = iTime(_Symbol, g_tf[i], 1);
       if(t > 0 && t != g_last[i])
@@ -176,7 +179,7 @@ void OnTimer()
      {
       if(Send(false, mask))
         {
-         for(int i = 0; i < 5; i++)
+         for(int i = 0; i < 6; i++)
             if(((mask >> i) & 1) == 1)
                g_last[i] = iTime(_Symbol, g_tf[i], 1);
          g_lastSend = now;

@@ -19,6 +19,7 @@ from .engine import (LTF_OF, PARENT_OF, RECENT_WINDOW, TF_NAME, TF_SEC, Level, S
                      strength)
 
 H4S, D1S = TF_SEC["H4"], TF_SEC["D1"]
+M15_MIN = 60                  # 15-min candles needed (same as state.M15_MIN)
 PAIRS = [("MN1", "W1"), ("W1", "D1"), ("D1", "H4"), ("D1", "H1")]          # (higher, lower)
 SERVES = {"MN1": ["MN1"], "W1": ["MN1", "W1"], "D1": ["W1", "D1"], "H4": ["D1", "H4"], "H1": ["D1", "H4"]}
 N_KEY = {"MN1": 2, "W1": 3, "D1": 3, "H4": 3, "H1": 3}
@@ -273,6 +274,46 @@ def story_reason(a, tf: str, s: Story) -> str:
 
 
 # ------------------------------------------------------------------ setups
+def grade_for(a, d: str) -> str:
+    """Setup grade (same for every setup): A = Weekly and Daily story lines agree, B = only Daily agrees, C = otherwise."""
+    want = "bear" if d == "sell" else "bull"
+    d1, w1 = a.stories.get("D1"), a.stories.get("W1")
+    d_ok = bool(d1 and d1.dir == want)
+    w_ok = bool(w1 and w1.dir == want)
+    return "A" if d_ok and w_ok else "B" if d_ok else "C"
+
+
+def class15_for(a, d: str, entry: dict) -> tuple:
+    """15-min class (Setup 4 only): A = the 4-hour story line agrees AND the entry zone is a STRONG zone,
+    B = one of the two, C = neither. Returns (letter, short reason)."""
+    want = "bear" if d == "sell" else "bull"
+    hs = a.stories.get("H4")
+    h4_ok = bool(hs and hs.dir == want)
+    strong = bool(entry and entry.get("strong"))
+    letter = "A" if h4_ok and strong else "B" if h4_ok or strong else "C"
+    why = ("4-hour story line agrees" if h4_ok else "4-hour story line " + ("is against it" if hs else "not set")) + "; " + \
+          ("entry is a STRONG zone" if strong else "entry zone is not an overlap zone")
+    return letter, why
+
+
+def _m15_entry(a, d: str, rej_price: float) -> Optional[dict]:
+    """Entry level for Setup 4: the strongest H1 / H4 key level that the 1-hour rejection actually happened at."""
+    story_d = "bear" if d == "sell" else "bull"
+    got = {tf: pick(a, tf, story_d) for tf in ("H1", "H4")}
+    mark_strong(a, {tf: got[tf]["key"] for tf in got})
+    tol = (config.M15_ZONE_PIPS or 1.5 * overlap_pips(a.symbol, a.pip)) * a.pip
+    pool: List[KeyLevel] = []
+    for tf in got:
+        for kl in got[tf]["key"]:
+            kl.serves = "H1"
+            if abs(kl.price - rej_price) <= tol:
+                pool.append(kl)
+    if not pool:
+        return None
+    best = max(pool, key=lambda k: (k.strong, k.tf == "H4", k.strength))
+    return dict(level=best.as_dict(), refine=None)
+
+
 def _aligned(a, d: str) -> Dict[str, Optional[bool]]:
     want = "bear" if d == "sell" else "bull"
     out = {}
@@ -375,8 +416,9 @@ def _entry_zone(a, d: str, entry_tf: str, refine_tf: Optional[str], extra_tfs: L
     return out
 
 
-def build_setups(a, confirms) -> List[dict]:
-    """Setup 1: Daily story line | Setup 2: 4-hour story line | Setup 3: confirmation entry."""
+def build_setups(a, confirms, confirms15=None) -> List[dict]:
+    """Setup 1: Daily story line | Setup 2: 4-hour story line | Setup 3: confirmation entry |
+    Setup 4: 15-minute entry at an H1/H4 level (only when the feeder sends 15-min candles)."""
     h4 = a.series["H4"]
     asia = is_asia(h4, a.last_t)
     out: List[dict] = []
@@ -384,10 +426,11 @@ def build_setups(a, confirms) -> List[dict]:
     def base(i, title):
         return dict(id=i, title=title, status="waiting", reason="", dir=None, aligned={}, entry=None,
                     refine=None, targets=[], enter_by=None, stays_valid="", invalid_if=None, asia=asia,
-                    key="", story_tf="")
+                    key="", story_tf="", grade="", grade15="", grade15_why="")
 
     def finish(su, d, entry_info, enter_by, groups, extra=None):
         su["dir"] = d
+        su["grade"] = grade_for(a, d)
         su["aligned"] = _aligned(a, d)
         if not entry_info:
             su["reason"] = "no valid entry level near price yet"
@@ -463,6 +506,37 @@ def build_setups(a, confirms) -> List[dict]:
             s3["status"] = "upgraded"
             s3["reason"] = "the 4-hour story line started from this rejection: see Setup 2"
     out.append(s3)
+
+    # ---- Setup 4: 15-minute entry = 1-hour rejection at an H1/H4 key level, then a 15-min break (QM or OCL)
+    if config.ENABLE_M15:
+        s4 = base(4, "15-min entry: 1-hour rejection at an H1/H4 level, then 15-min break")
+        cf4 = max(confirms15, key=lambda c: c.break_t) if confirms15 else None
+        if len(a.series.get("M15") or []) < M15_MIN:
+            s4["reason"] = "no 15-min candles from MT5 yet (use SNR_Feeder v1.2 and press Sync now)"
+        elif not cf4:
+            s4["reason"] = "no 1-hour rejection followed by a 15-min break yet"
+        elif a.last_t > cf4.h4_t + 3600 + int(config.CONFIRM_WINDOW_M15_H * 3600):
+            s4["reason"] = "last 15-min confirmation expired"
+        else:
+            d = cf4.dir
+            s4["dir"], s4["grade"], s4["aligned"], s4["story_tf"] = d, grade_for(a, d), _aligned(a, d), "H1"
+            info = _m15_entry(a, d, cf4.rej_price)
+            if not info:
+                s4["reason"] = (f"the 1-hour rejection at {px(a, cf4.rej_price)} was not at an H1/H4 key level "
+                                f"for a {'sell' if d == 'sell' else 'buy'}: no 15-min setup")
+            else:
+                brk = "a structure break (QM)" if cf4.break_type == "QM" else "an open-close level (OCL) break"
+                enter_by = cf4.break_t + config.M15_ENTRY_MIN * 60
+                finish(s4, d, info, enter_by, [("H1", "roadblock"), ("H4", "roadblock")],
+                       extra=dict(cf_text=(f"1-hour rejected the 1-hour {'resistance' if d == 'sell' else 'support'} at "
+                                           f"{px(a, cf4.rej_price)} and 15-min gave {brk} at {px(a, cf4.break_level)}"),
+                                  cf_break_t=cf4.break_t, cf_h4_t=cf4.h4_t,
+                                  stays_valid=(f"for about {config.M15_ENTRY_MIN} minutes after the 15-min break, and only while "
+                                               f"no 1-hour candle closes beyond the zone. Short-term trade: pay yourself at the "
+                                               f"1-hour / 4-hour roadblocks.")))
+                s4["grade15"], s4["grade15_why"] = class15_for(a, d, s4["entry"])
+                s4["key"] = f"S4|{d}|{cf4.h4_t}|{cf4.break_t}"
+        out.append(s4)
     return out
 
 

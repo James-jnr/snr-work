@@ -36,9 +36,28 @@ def agg(rows, seconds, align_offset=0):
     return res[:-1]  # drop the still-forming last bucket
 
 
+def make_m15(h1_rows, seed=11):
+    """Split each H1 candle into four 15-min candles (same open, close, high and low as the hour)."""
+    rnd = random.Random(seed)
+    out = []
+    for t, o, hi, lo, c in h1_rows:
+        span = max(hi - lo, 1e-9)
+        closes = [o + (c - o) * (k + 1) / 4 + rnd.gauss(0, span * 0.12) for k in range(3)] + [c]
+        closes = [min(hi, max(lo, x)) for x in closes[:3]] + [c]
+        prev = o
+        for k in range(4):
+            cl = closes[k]
+            h = max(prev, cl) + abs(rnd.gauss(0, span * 0.05))
+            l = min(prev, cl) - abs(rnd.gauss(0, span * 0.05))
+            out.append([t + k * 900, prev, min(h, hi) if k != 1 else hi, max(l, lo) if k != 2 else lo, cl])
+            prev = cl
+        out[-4][3] = min(out[-4][3], out[-4][1], out[-4][4])
+    return out
+
+
 def build_payload(h1=None, full=True, symbol="XAUUSD"):
     h1 = h1 or make_h1()
-    tfs = {"H1": h1[-700:], "H4": agg(h1, 4 * H)[-500:], "D1": agg(h1, 86400)[-300:],
+    tfs = {"M15": make_m15(h1[-200:])[-600:], "H1": h1[-700:], "H4": agg(h1, 4 * H)[-500:], "D1": agg(h1, 86400)[-300:],
            "W1": agg(h1, 604800, 3 * 86400)[-120:], "MN1": agg(h1, 30 * 86400)[-30:]}
     return {"symbol": symbol, "server_time": h1[-1][0] + H, "gmt_offset": 7200, "digits": 2, "point": 0.01,
             "tick_size": 0.01, "tick_value": 1.0, "vol_min": 0.01, "vol_step": 0.01, "vol_max": 100,

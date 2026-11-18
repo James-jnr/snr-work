@@ -29,7 +29,7 @@ from .engine import STORY_TFS, TF_NAME as _TF_NAME, Params, scan  # noqa: E402
 from .state import STORE, SymbolState  # noqa: E402
 
 TF_NAME = {**_TF_NAME, "ZM": "Zone map"}
-DEFAULT_BARS = {"MN1": 30, "W1": 30, "D1": 30, "H4": 30, "H1": 30}
+DEFAULT_BARS = {"MN1": 40, "W1": 80, "D1": 90, "H4": 120, "H1": 120}
 MAX_REJECTIONS = 12
 TF_COLOR = {"MN1": "#7c3aed", "W1": "#2563eb", "D1": "#0d9488", "H4": "#ea580c", "H1": "#64748b"}
 TF_WIDTH = {"MN1": 2.8, "W1": 2.3, "D1": 1.9, "H4": 1.5, "H1": 1.1}
@@ -96,12 +96,12 @@ def _ld(kl) -> dict:
                 strong=kl.strong, t=kl.formed_t, flips=kl.flips, tf=kl.tf)
 
 
-def make_spec(st: SymbolState, a: Analysis, tf: str, style: Optional[str] = None,
+def make_spec(st: SymbolState, a: Analysis, tf: str, bars: int = 0, style: Optional[str] = None,
               theme: Optional[str] = None, plan: Optional[dict] = None, all_levels: bool = False) -> ChartSpec:
     allbars = a.series.get(tf) or st.series(tf)
     if len(allbars) < 8:
         raise LookupError(f"{TF_NAME.get(tf, tf)} history is too short ({len(allbars)} candles)")
-    n = DEFAULT_BARS.get(tf, 30)
+    n = bars or DEFAULT_BARS.get(tf, 100)
     n = max(20, min(n, len(allbars))) if len(allbars) >= 20 else len(allbars)
     first = len(allbars) - n
     vis = allbars[first:]
@@ -175,7 +175,7 @@ def make_zonemap(st: SymbolState, a: Analysis, theme: Optional[str] = None) -> Z
                        (theme or config.CHART_THEME) if (theme or config.CHART_THEME) in THEMES else "light")
 
 
-def spec_for(symbol: str, tf: str, style: Optional[str] = None, theme: Optional[str] = None,
+def spec_for(symbol: str, tf: str, bars: int = 0, style: Optional[str] = None, theme: Optional[str] = None,
              all_levels: bool = False):
     """Live spec for the web UI (takes the data lock briefly)."""
     with STORE.lock:
@@ -187,7 +187,7 @@ def spec_for(symbol: str, tf: str, style: Optional[str] = None, theme: Optional[
             raise LookupError("not enough data yet")
         if tf == "ZM":
             return make_zonemap(st, a, theme)
-        return make_spec(st, a, tf, style, theme, None, all_levels)
+        return make_spec(st, a, tf, bars, style, theme, None, all_levels)
 
 
 def plan_from_setup(su: dict) -> Optional[dict]:

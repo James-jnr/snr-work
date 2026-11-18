@@ -41,11 +41,20 @@ NO_TRADE_DATES = {d.strip() for d in os.getenv("NO_TRADE_DATES", "").split(",") 
 
 # --- level / structure detection strength (tunable) ---
 PIVOT_N = {tf: int(_f(f"PIVOT_N_{tf}", d)) for tf, d in
-           {"MN1": 1, "W1": 2, "D1": 2, "H4": 2, "H1": 1}.items()}
+           {"MN1": 1, "W1": 2, "D1": 2, "H4": 2, "H1": 1, "M15": 1}.items()}
 QM_W = {tf: int(_f(f"QM_W_{tf}", d)) for tf, d in
-        {"W1": 2, "D1": 2, "H4": 2, "H1": 2}.items()}
+        {"W1": 2, "D1": 2, "H4": 2, "H1": 2, "M15": 2}.items()}
 
 PIP_OVERRIDES = json.loads(os.getenv("PIP_OVERRIDES", "{}"))  # {"XAUUSD": 0.1}
+
+# --- v4: 15-minute setup (Setup 4) ---
+ENABLE_M15 = _b("ENABLE_M15", True)
+CONFIRM_WINDOW_M15_H = _f("CONFIRM_WINDOW_M15_H", 2)   # the 15-min break must come within this many hours of the 1-hour rejection
+M15_ENTRY_MIN = int(_f("M15_ENTRY_MIN", 45))           # how long after the 15-min break the entry stays valid (minutes)
+M15_COOLDOWN_MIN = int(_f("M15_COOLDOWN_MIN", 45))     # min minutes between 15-min alerts in the same direction
+M15_ZONE_COOLDOWN_H = _f("M15_ZONE_COOLDOWN_H", 3)        # no second 15-min alert at the same entry level for this many hours
+M15_MIN_CLASS = os.getenv("M15_MIN_CLASS", "B").upper()  # alert only when the 15-min class is this or better (A best); C = alert all
+M15_ZONE_PIPS = _f("M15_ZONE_PIPS", 0)                 # the 1-hour rejection must sit this close to an H1/H4 key level (0 = 1.5 x zone overlap)
 
 # --- delivery ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -63,7 +72,7 @@ OFFLINE_AFTER_SEC = int(_f("OFFLINE_AFTER_SEC", 600))
 # --- charts ---
 CHARTS_IN_ALERTS = _b("CHARTS_IN_ALERTS", True)      # attach per-timeframe level charts to alerts
 CHART_THEME = os.getenv("CHART_THEME", "light")      # light | dark
-CHART_STYLE = os.getenv("CHART_STYLE", "candles")    # candles | line (closes)
+CHART_STYLE = os.getenv("CHART_STYLE", "line")       # line (closes, as in the course) | candles
 
 # --- v3: levels, zones, limits, interface ---
 ZONE_OVERLAP_PIPS = _f("ZONE_OVERLAP_PIPS", 0)      # 0 = automatic (gold 25, JPY 15, other forex 12)

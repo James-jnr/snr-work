@@ -1,11 +1,11 @@
-# SNR Story Line System (v3)
+# SNR Story Line System (v4)
 
 ```
  MT5 (your PC)               Backend (local or Render)               You
 ┌───────────────┐  HTTPS   ┌─────────────────────────────┐  ┌──────────────────────────┐
 │ SNR_Feeder EA │ ───────► │ levels, story lines,        │─►│ Web pages (full width)   │
 │ closed candles│  /ingest │ key levels, 3 setups        │  │ Telegram + email         │
-│ MN1 W1 D1 H4 H1│ ◄─────── │ charts, alert database      │  │ Phone link (QR code)     │
+│MN1 W1 D1 H4 H1 M15│ ◄─────── │ charts, alert database      │  │ Phone link (QR code)     │
 └───────────────┘  "sync"  └─────────────────────────────┘  └──────────────────────────┘
 ```
 The EA is read-only (it never trades). The backend does all the analysis.
@@ -19,9 +19,30 @@ copy .env.example .env                                    (then set API_KEY and 
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --env-file .env
 ```
 `--host 0.0.0.0` lets your phone reach it. Open **http://127.0.0.1:8000/ui**. In MT5 allow WebRequest for
-`http://127.0.0.1:8000` and attach `mt5/SNR_Feeder.mq5` (v1.1) to an XAUUSD / EURUSD / GBPUSD chart with
+`http://127.0.0.1:8000` and attach `mt5/SNR_Feeder.mq5` (v1.2, sends 15-min candles too) to an XAUUSD / EURUSD / GBPUSD chart with
 `BackendUrl=http://127.0.0.1:8000/ingest` and your `ApiKey`. No MT5 yet? `python scripts/simulate.py http://127.0.0.1:8000 <API_KEY>`.
 Telegram and email are optional: with neither set, everything still lands on the web pages.
+
+## What changed in v4
+**Grade on every setup.** Every setup that has a direction now shows its grade in the report header and in a `Grade :` line:
+`A` = Weekly and Daily story lines both agree with the setup, `B` = only Daily agrees, `C` = against the Daily story line.
+(Setup 1/3/4 alerts carry it in the subject; the Alerts page chip and the stats table by grade use it.)
+
+**Setup 4: 15-minute trade at H1 / H4 levels.** Same idea as Setup 3, one timeframe down:
+a **1-hour candle rejects an H1 or H4 key level** (a level that supports the setup direction), then **15-min closes give a QM or open-close break**
+in the same direction. Entry zone = that H1/H4 level (strongest if several). Targets = **1-hour roadblocks, then 4-hour roadblocks**, plus
+previous day/week and Asian high/low when they lie beyond. It is valid for `M15_ENTRY_MIN` (45) minutes after the 15-min break and only while no
+1-hour candle closes beyond the zone. No entries in Asia; the 3-trades / 3-losses limits apply.
+
+**15-min class** (shown next to the grade, Setup 4 only): `A` = the 4-hour story line agrees AND the entry is a STRONG zone (overlaps a Daily level),
+`B` = one of the two, `C` = neither. Alerts are sent for class `M15_MIN_CLASS` (default B) or better; class C stays visible in the report.
+The stats page gets a second table: results by 15-min class.
+
+**Upgrade steps:** replace `SNR_Feeder.mq5` with v1.2 (compile, re-attach; it adds `BarsM15`), restart the backend, press **Sync now**.
+Setup 4 shows "no 15-min candles yet" until MT5 has sent them. With the feeder on M15 the backend also uses the latest 15-min close as
+"price", so Setup 1 approach alerts are no longer up to an hour stale.
+New settings (all optional, `.env.example`): `ENABLE_M15`, `CONFIRM_WINDOW_M15_H`, `M15_ENTRY_MIN`, `M15_COOLDOWN_MIN`, `M15_ZONE_COOLDOWN_H`,
+`M15_MIN_CLASS`, `M15_ZONE_PIPS`. Test without MT5/web server: `python scripts/check_m15.py` (`REPLAY_H=40 SEEDS=7` for a quick run).
 
 ## What changed in v3
 **Pages**
@@ -58,7 +79,7 @@ Telegram and email are optional: with neither set, everything still lands on the
 `PIVOT_N_<TF>`, `QM_W_<TF>` (how big a swing counts), `ZONE_OVERLAP_PIPS` (0 = auto: gold 25, JPY 15, forex 12),
 `MIN_TARGET_PIPS` (ignore targets closer than this), `MIN_GAP_PIPS`, `MIN_GRADE` (A/B/C for confirmation alerts),
 `SIGNAL_COOLDOWN_H`, `APPROACH_PIPS`, `MAX_TRADES_PER_DAY`, `MAX_CONSEC_LOSSES`, `SUPPRESS_WHEN_LIMIT`, `CHARTS_IN_ALERTS`,
-`CHART_THEME`, `CHART_STYLE`, `BASE_URL`, `PIP_OVERRIDES`. Timeframe charts default to candlesticks and show 30 candles for each timeframe (Monthly, Weekly, Daily, 4-hour, and 1-hour); the chart page still lets you switch to a close-price line.
+`CHART_THEME`, `CHART_STYLE`, `BASE_URL`, `PIP_OVERRIDES`.
 
 ## Tests
 ```

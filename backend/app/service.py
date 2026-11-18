@@ -56,8 +56,8 @@ def _approach(a: Analysis) -> float:
     return config.APPROACH_PIPS or 1.5 * zones.overlap_pips(a.symbol, a.pip)
 
 
-def _cooling(st: SymbolState, key: str, ts: int) -> bool:
-    if ts - st.last_signal.get(key, 0) < config.SIGNAL_COOLDOWN_H * 3600:
+def _cooling(st: SymbolState, key: str, ts: int, seconds: Optional[float] = None) -> bool:
+    if ts - st.last_signal.get(key, 0) < (config.SIGNAL_COOLDOWN_H * 3600 if seconds is None else seconds):
         return True
     st.last_signal[key] = ts
     return False
@@ -66,14 +66,16 @@ def _cooling(st: SymbolState, key: str, ts: int) -> bool:
 def _setup_alert(st, a, su) -> Msg:
     word = "SELL" if su["dir"] == "sell" else "BUY"
     grade = grade_for(a, su["dir"])
+    g15 = su.get("grade15", "")
     head = [f"SETUP {su['id']} READY: {word}  ({su['title']})"]
     if a.limits.get("blocked"):
         head.append(f"⛔ {a.limits['blocked']}")
     plan = charts.plan_from_setup(su)
-    return (f"🎯 {st.symbol} {word} setup (grade {grade})", fmt_report(a, _verify(st), head),
-            _meta(st, a, "setup", direction=su["dir"], grade=grade, setup_id=su["id"],
+    subject = f"🎯 {st.symbol} {word} setup (grade {grade})" + (f" · 15-min class {g15}" if g15 else "")
+    return (subject, fmt_report(a, _verify(st), head),
+            _meta(st, a, "setup", direction=su["dir"], grade=grade, grade15=g15, setup_id=su["id"],
                   entry=(su["refine"] or su["entry"])["price"], key=su["key"]),
-            _specs(st, a, ("ZM", "D1", "H4", "H1"), plan=plan))
+            _specs(st, a, ("ZM", "H1", "H4", "D1") if su["id"] == 4 else ("ZM", "D1", "H4", "H1"), plan=plan))
 
 
 # ------------------------------------------------------------------ first full load
@@ -91,6 +93,9 @@ def warmup(st: SymbolState) -> List[Msg]:
             st.notified.add(su["key"])
             if su["id"] == 3 and su.get("cf_break_t"):
                 st.last_signal[su["dir"]] = max(st.last_signal.get(su["dir"], 0), su["cf_break_t"])
+            if su["id"] == 4 and su.get("cf_break_t"):
+                k4 = "m15|" + su["dir"]
+                st.last_signal[k4] = max(st.last_signal.get(k4, 0), su["cf_break_t"])
     msgs: List[Msg] = []
     force, st.force_snapshot = st.force_snapshot, False
     if force or time.time() - st.last_online_msg > 3600:
@@ -153,6 +158,17 @@ def on_new_bars(st: SymbolState, new_tfs: List[str]) -> List[Msg]:
             st.notified.add(su["key"])
             if _cooling(st, su["dir"], a.last_t):
                 continue
+        elif su["id"] == 4:
+            st.notified.add(su["key"])
+            if GRADE_RANK[su.get("grade15") or "C"] < GRADE_RANK.get(config.M15_MIN_CLASS, 2):
+                continue         # weak 15-min class: shown in reports, no alert
+            ts4 = su.get("cf_break_t", a.last_t)
+            zone_key = f"m15z|{su['dir']}|{round(su['entry']['price'], 5)}"       # same level again: wait longer
+            cools = [("m15|" + su["dir"], config.M15_COOLDOWN_MIN * 60), (zone_key, config.M15_ZONE_COOLDOWN_H * 3600)]
+            if any(ts4 - st.last_signal.get(k, 0) < secs for k, secs in cools):
+                continue
+            for k, _ in cools:
+                st.last_signal[k] = ts4
         else:
             continue          # Setup 2 is delivered inside the 4-hour story-line alert
         msgs.append(_setup_alert(st, a, su))

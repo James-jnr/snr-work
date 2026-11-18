@@ -220,13 +220,13 @@ def _tf(tf: str) -> str:
 
 
 @router.get("/api/chart.png")
-def chart_png(symbol: str, tf: str = "D1", style: Optional[str] = None, theme: str = "light",
+def chart_png(symbol: str, tf: str = "D1", bars: int = 0, style: str = "line", theme: str = "light",
               all_levels: bool = False,
               x_api_key: Optional[str] = Header(default=None), key: Optional[str] = None):
     """Live chart of ONE timeframe (or the zone map, tf=ZM) with the key levels the engine selected."""
     ui_auth(x_api_key, key)
     try:
-        spec = charts.spec_for(symbol, _tf(tf), style, theme, all_levels)
+        spec = charts.spec_for(symbol, _tf(tf), max(0, min(bars, 400)), style, theme, all_levels)
     except LookupError as e:
         raise HTTPException(409, str(e))
     return Response(charts.render(spec), media_type="image/png", headers={"Cache-Control": "no-store"})

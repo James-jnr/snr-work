@@ -5,9 +5,7 @@ import sqlite3
 import threading
 import time
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from zoneinfo import ZoneInfo
 
 from . import config
 
@@ -233,13 +231,9 @@ def rejected_storylines(symbol: str):
 def daily_limits(now: Optional[float] = None) -> Dict[str, Any]:
     """Mentorship rules: max trades per day, and stop after N losses in a row (trades you marked as taken)."""
     _ensure()
+    import datetime as _dt
     t = now if now is not None else time.time()
-    try:
-        tz = ZoneInfo(config.DISPLAY_TZ)
-    except Exception:
-        tz = timezone.utc
-    midnight = int(datetime.fromtimestamp(t, tz).replace(
-        hour=0, minute=0, second=0, microsecond=0).timestamp())
+    midnight = int(_dt.datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
     with _conn() as c:
         rows = c.execute("SELECT outcome FROM alerts WHERE taken=1 AND created_at>=? ORDER BY id DESC",
                          (midnight,)).fetchall()
@@ -341,4 +335,21 @@ def stats(symbol: str = "") -> Dict[str, Any]:
             tot[k] += g[k]
     decided = tot["won"] + tot["lost"]
     tot["win_rate"] = round(100.0 * tot["won"] / decided, 1) if decided else None
-    return {"by_kind": by_kind, "grades": dict(sorted(grades.items())), "overall": tot}
+    # 15-min class (Setup 4): lives in each alert's meta JSON, so group it here
+    g15: Dict[str, Dict[str, Any]] = {}
+    with _conn() as c:
+        for r in c.execute(f"SELECT meta, outcome FROM alerts WHERE {cond}", args).fetchall():
+            try:
+                k = (json.loads(r["meta"]) or {}).get("grade15") or ""
+            except Exception:
+                k = ""
+            if not k:
+                continue
+            g = g15.setdefault(k, {"total": 0, "won": 0, "lost": 0, "breakeven": 0, "skipped": 0, "unmarked": 0})
+            g["total"] += 1
+            g[r["outcome"] if r["outcome"] else "unmarked"] += 1
+    for g in g15.values():
+        dec = g["won"] + g["lost"]
+        g["win_rate"] = round(100.0 * g["won"] / dec, 1) if dec else None
+    return {"by_kind": by_kind, "grades": dict(sorted(grades.items())), "grades15": dict(sorted(g15.items())),
+            "overall": tot}

@@ -14,10 +14,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-TF_SEC = {"H1": 3600, "H4": 14400, "D1": 86400, "W1": 604800, "MN1": 2678400}
+TF_SEC = {"M15": 900, "H1": 3600, "H4": 14400, "D1": 86400, "W1": 604800, "MN1": 2678400}
 LTF_OF = {"MN1": "W1", "W1": "D1", "D1": "H4", "H4": "H1"}   # story-line TF -> breakout / obstacle TF
 PARENT_OF = {"W1": "MN1", "D1": "W1", "H4": "D1"}              # whose obstacles this TF's levels are
-TF_NAME = {"MN1": "Monthly", "W1": "Weekly", "D1": "Daily", "H4": "4-hour", "H1": "1-hour"}
+TF_NAME = {"MN1": "Monthly", "W1": "Weekly", "D1": "Daily", "H4": "4-hour", "H1": "1-hour", "M15": "15-min"}
 STORY_TFS = ("MN1", "W1", "D1", "H4")
 
 
@@ -236,24 +236,28 @@ def current_story(events: List[Story], now_ts: int) -> Optional[Story]:
     return valid[-1] if valid else None
 
 
-def find_confirmations(h4: List[Bar], h1: List[Bar], p: Params, now_ts: int, window_h: int) -> List[Confirm]:
+def find_confirmations(h4: List[Bar], h1: List[Bar], p: Params, now_ts: int, window_h: float,
+                       htf: str = "H4", ltf: str = "H1") -> List[Confirm]:
+    """Higher-TF rejection followed by a lower-TF QM / open-close break.
+    Defaults give Setup 3 (H4 rejection, H1 break). Setup 4 calls it with htf="H1", ltf="M15".
+    (Parameter names h4/h1 are kept for old callers; they mean "higher TF bars" / "lower TF bars".)"""
     if len(h4) < 10 or len(h1) < 20:
         return []
-    rej, _, _ = scan("H4", h4, p, start=max(0, len(h4) - 4))
-    qms = find_qms(h1, p.qm_w["H1"])
-    _, brk, _ = scan("H1", h1, p)
+    rej, _, _ = scan(htf, h4, p, start=max(0, len(h4) - 4))
+    qms = find_qms(h1, p.qm_w[ltf])
+    _, brk, _ = scan(ltf, h1, p)
     out, seen = [], set()
     for r in rej:
-        close_t = h4[r.k].t + TF_SEC["H4"]
+        close_t = h4[r.k].t + TF_SEC[htf]
         if now_ts - close_t > window_h * 3600 or (r.k, r.dir) in seen:
             continue
         cands = []
         for q in qms:
-            qc = h1[q.i].t + TF_SEC["H1"]
+            qc = h1[q.i].t + TF_SEC[ltf]
             if q.dir == r.dir and qc > close_t:
                 cands.append((qc, "QM", q.level))
         for k, d, price, kind in brk:
-            bc = h1[k].t + TF_SEC["H1"]
+            bc = h1[k].t + TF_SEC[ltf]
             if kind == "OC" and d == r.dir and bc > close_t:
                 cands.append((bc, "OC", price))
         if not cands:

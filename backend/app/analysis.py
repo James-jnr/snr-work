@@ -56,11 +56,7 @@ def story_key(tf: str, s: Story) -> str:
 
 
 def grade_for(a: Analysis, d: str) -> str:
-    want = "bear" if d == "sell" else "bull"
-    d1, w1 = a.stories.get("D1"), a.stories.get("W1")
-    d_ok = bool(d1 and d1.dir == want)
-    w_ok = bool(w1 and w1.dir == want)
-    return "A" if d_ok and w_ok else "B" if d_ok else "C"
+    return zones.grade_for(a, d)
 
 
 def analyze(st: SymbolState, rejected: Optional[Set[Tuple[str, str, int]]] = None,
@@ -73,6 +69,11 @@ def analyze(st: SymbolState, rejected: Optional[Set[Tuple[str, str, int]]] = Non
     s = {tf: st.series(tf) for tf in tfs}
     price = s["H1"][-1].c
     last_t = s["H1"][-1].t + TF_SEC["H1"]
+    use_m15 = bool(config.ENABLE_M15 and st.has_m15())
+    if use_m15:
+        s["M15"] = st.series("M15")
+        if s["M15"][-1].t + TF_SEC["M15"] > last_t:      # the 15-min feed is newer than the last closed 1-hour candle
+            price, last_t = s["M15"][-1].c, s["M15"][-1].t + TF_SEC["M15"]
 
     stories: Dict[str, Optional[Story]] = {}
     prev: Dict[str, Optional[Story]] = {}
@@ -110,7 +111,11 @@ def analyze(st: SymbolState, rejected: Optional[Set[Tuple[str, str, int]]] = Non
             a.status[tf] = zones.story_status(a, tf)
     confirms = find_confirmations(s["H4"], s["H1"], p, last_t, config.CONFIRM_WINDOW_H)
     confirms = [c for c in confirms if not zones.is_asia(s["H4"], c.break_t - 1)]
-    a.setups = zones.build_setups(a, confirms)
+    confirms15 = []
+    if use_m15:
+        confirms15 = find_confirmations(s["H1"], s["M15"], p, last_t, config.CONFIRM_WINDOW_M15_H, "H1", "M15")
+        confirms15 = [c for c in confirms15 if not zones.is_asia(s["H4"], c.break_t - 1)]
+    a.setups = zones.build_setups(a, confirms, confirms15)
     return a
 
 

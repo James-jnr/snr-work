@@ -4,9 +4,10 @@ from typing import Dict, List
 
 from .engine import Bar
 
-TFS = ("MN1", "W1", "D1", "H4", "H1")
-MAXBARS = {"MN1": 60, "W1": 200, "D1": 400, "H4": 600, "H1": 800}
-MIN_READY = {"W1": 30, "D1": 60, "H4": 100, "H1": 150}  # MN1 optional
+TFS = ("MN1", "W1", "D1", "H4", "H1", "M15")
+MAXBARS = {"MN1": 60, "W1": 200, "D1": 400, "H4": 600, "H1": 800, "M15": 800}
+MIN_READY = {"W1": 30, "D1": 60, "H4": 100, "H1": 150}  # MN1 and M15 are optional
+M15_MIN = 60                                             # candles needed before Setup 4 can run
 
 
 class SymbolState:
@@ -50,6 +51,9 @@ class SymbolState:
     def last_time(self, tf: str) -> int:
         d = self.bars[tf]
         return max(d) if d else -1
+
+    def has_m15(self) -> bool:
+        return len(self.bars["M15"]) >= M15_MIN
 
     def ready(self) -> bool:
         return all(len(self.bars[tf]) >= n for tf, n in MIN_READY.items())

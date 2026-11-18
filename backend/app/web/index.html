@@ -35,6 +35,7 @@ const KIND = {setup: "Setup", storyline: "Story line", brief: "Briefing", snapsh
 function chips(a) {
   const out = [];
   if (a.kind === "setup" && a.direction) out.push(el("span", {class: "chip " + a.direction}, a.direction.toUpperCase() + (a.grade ? " · grade " + a.grade : "")));
+  if (a.kind === "setup" && a.meta && a.meta.grade15) out.push(el("span", {class: "chip"}, "15-min class " + a.meta.grade15));
   if (a.kind === "storyline" && a.direction) out.push(el("span", {class: "chip " + a.direction}, a.direction === "buy" ? "Buy bias" : "Sell bias"));
   for (const s of (a.meta && a.meta.stories) || []) out.push(el("span", {class: "chip " + (s.dir === "bull" ? "buy" : "sell")}, s.name + " " + (s.dir === "bull" ? "bullish" : "bearish")));
   return out;
@@ -75,9 +76,13 @@ async function loadStats() {
   const t = el("table", {class: "lv"}, el("thead", {}, el("tr", {}, ...["Grade", "Setups", "Won", "Lost", "Break-even", "Skipped", "Unmarked", "Win rate"].map(h => el("th", {}, h)))),
     el("tbody", {}, ...g.map(([k, v]) => el("tr", {}, el("td", {}, "Grade " + k), ...[v.total, v.won, v.lost, v.breakeven, v.skipped, v.unmarked].map(x => el("td", {}, x)), el("td", {}, v.win_rate === null ? "–" : v.win_rate + "%"))),
       el("tr", {}, el("td", {}, el("b", {}, "All")), ...[s.overall.total, s.overall.won, s.overall.lost, s.overall.breakeven, s.overall.skipped, s.overall.unmarked].map(x => el("td", {}, el("b", {}, x))), el("td", {}, el("b", {}, s.overall.win_rate === null ? "–" : s.overall.win_rate + "%")))));
+  const g15 = Object.entries(s.grades15 || {});
+  const t15 = !g15.length ? null : el("div", {class: "card", style: "margin-top:12px"}, el("h2", {}, "Results of 15-min setups you marked (by 15-min class)"),
+    el("div", {class: "tablewrap"}, el("table", {class: "lv"}, el("thead", {}, el("tr", {}, ...["15-min class", "Setups", "Won", "Lost", "Break-even", "Skipped", "Unmarked", "Win rate"].map(h => el("th", {}, h)))),
+      el("tbody", {}, ...g15.map(([k, v]) => el("tr", {}, el("td", {}, "Class " + k), ...[v.total, v.won, v.lost, v.breakeven, v.skipped, v.unmarked].map(x => el("td", {}, x)), el("td", {}, v.win_rate === null ? "–" : v.win_rate + "%")))))));
   $("#out").replaceChildren(el("div", {class: "card"}, el("h2", {}, "Alerts by type"), el("div", {}, ...kinds)),
     el("div", {class: "card", style: "margin-top:12px"}, el("h2", {}, "Results of setups you marked (by grade)"), el("div", {class: "tablewrap"}, t),
-      el("div", {class: "small", style: "margin-top:8px"}, "Mark each setup's result on its alert page to fill this in. Win rate counts won vs lost only.")));
+      el("div", {class: "small", style: "margin-top:8px"}, "Mark each setup's result on its alert page to fill this in. Win rate counts won vs lost only.")), ...(t15 ? [t15] : []));
   $("#count").textContent = "";
 }
 async function load() { try { view === "stats" ? await loadStats() : await loadAlerts(); } catch (e) { if (e.message !== "auth") $("#out").replaceChildren(el("div", {class: "empty err"}, "Could not load: " + e.message)); } }
