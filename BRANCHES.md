@@ -21,3 +21,22 @@ The connected feature line is:
 `main` → `feature/v2-storyline-alerting` → `snr-v3` → `snr-v4`
 
 The v2 source branches were imported from the separate `snr_system_v2` repository. The `v2-source/v2-baseline` and `v2-source/v3-upgrade` remote-tracking refs preserve those original source histories.
+
+## Branch Management Rules
+
+1. **Version Isolation**:
+   - Each major version branch (`v2-baseline`, `snr-v3`, `snr-v4`) must maintain its specific feature scope.
+   - Do not commit higher-version features (e.g. M15 Setup 4 logic) into earlier version branches (`snr-v3`, `main`, `v2-baseline`).
+
+2. **Branch Guide Synchronization (All Changes)**:
+   - `BRANCHES.md` is replicated across all branches.
+   - Whenever any branch is added, deleted, renamed, or repurposed, `BRANCHES.md` must be updated and committed across **all local branches** to ensure consistent branch layout documentation.
+
+3. **Forward Change Flow**:
+   - Common bugfixes, feeder updates, and general infrastructure improvements made on earlier branches should be merged or cherry-picked **forward**:
+     `main` → `feature/v2-storyline-alerting` → `snr-v3` → `snr-v4`.
+   - Never backport forward-version breaking features to prior version baselines.
+
+4. **Commit & Workflow Discipline**:
+   - Branch transitions must always begin with a clean working tree (no uncommitted or unstaged changes).
+   - Local environments (`.venv`), database files (`*.db`), generated charts (`setups/`), and archive files (`*.zip`) must remain git-ignored across all branches.
