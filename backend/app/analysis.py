@@ -1,10 +1,22 @@
 """Turns raw candles into story lines, key levels, status, liquidity and the three setups."""
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 from . import config, zones
-from .engine import (LTF_OF, STORY_TFS, TF_SEC, Bar, Level, Params, Rejection, Story, find_confirmations,
-                     find_qms, scan, storyline_events)
+from .engine import (
+    LTF_OF,
+    STORY_TFS,
+    TF_SEC,
+    Bar,
+    Level,
+    Params,
+    Rejection,
+    Story,
+    find_confirmations,
+    find_qms,
+    scan,
+)
 from .state import SymbolState
 
 GRADE_RANK = {"A": 3, "B": 2, "C": 1}
@@ -16,13 +28,33 @@ def pip_for(symbol: str, meta: dict) -> float:
         if s.startswith(pref.upper()):
             return float(v)
     if s.startswith(("XAU", "GOLD")):
-        return 0.1       # course convention: 1 pip = $0.10 on gold
+        return 0.1  # course convention: 1 pip = $0.10 on gold
     if s.startswith(("XAG", "SILVER")):
         return 0.01
+        # In app/analysis.py inside pip_for():
     if "JPY" in s:
         return 0.01
-    if s.startswith(("NAS", "US100", "USTEC", "NDX", "US30", "DJ", "DE", "GER", "UK100", "US500", "SPX")):
-        return 1.0
+    if (
+        len(s) >= 6
+        and s[:6].isalpha()
+        and not s.startswith(
+            (
+                "XAU",
+                "XAG",
+                "GOLD",
+                "SILV",
+                "NAS",
+                "US1",
+                "US3",
+                "US5",
+                "UK1",
+                "GER",
+                "SPX",
+            )
+        )
+    ):
+        return 0.0001
+
     digits = int(meta.get("digits", 5))
     point = float(meta.get("point", 0.00001))
     return point * 10 if digits in (3, 5) else point
@@ -49,9 +81,13 @@ class Analysis:
     status: Dict[str, Optional[dict]] = field(default_factory=dict)
     liquidity: dict = field(default_factory=dict)
     setups: List[dict] = field(default_factory=list)
-    scenarios: dict = field(default_factory=dict)          # two-sided plan around the Daily/Weekly story line
-    thesis: dict = field(default_factory=dict)             # the plan for this pair, as stored in memory
-    thesis_prev: Optional[dict] = None                     # previous stored thesis (filled by the service)
+    scenarios: dict = field(
+        default_factory=dict
+    )  # two-sided plan around the Daily/Weekly story line
+    thesis: dict = field(
+        default_factory=dict
+    )  # the plan for this pair, as stored in memory
+    thesis_prev: Optional[dict] = None  # previous stored thesis (filled by the service)
     thesis_changes: List[str] = field(default_factory=list)
     confirms: list = field(default_factory=list)
 
@@ -66,12 +102,22 @@ def grade_for(a: Analysis, d: str, story_tf: str = "D1") -> str:
     return zones.grade_from(zones.context(a, story_tf or "H4", d))
 
 
-def analyze(st: SymbolState, rejected: Optional[Set[Tuple[str, str, int]]] = None,
-            limits: Optional[dict] = None) -> Optional[Analysis]:
+# Update analyze() signature in app/analysis.py:
+def analyze(
+    st: SymbolState,
+    rejected: Optional[Set[Tuple[str, str, int]]] = None,
+    limits: Optional[dict] = None,
+    overrides: Optional[Dict[str, str]] = None,
+) -> Optional[Analysis]:
     if not st.ready():
         return None
     pip = pip_for(st.symbol, st.meta)
-    p = Params(pip=pip, pivot_n=config.PIVOT_N, qm_w=config.QM_W, tap_tol_pips=config.TAP_TOL_PIPS)
+    p = Params(
+        pip=pip,
+        pivot_n=config.PIVOT_N,
+        qm_w=config.QM_W,
+        tap_tol_pips=config.TAP_TOL_PIPS,
+    )
     tfs = ("MN1", "W1", "D1", "H4", "H1")
     s = {tf: st.series(tf) for tf in tfs}
     price = s["H1"][-1].c
@@ -80,32 +126,62 @@ def analyze(st: SymbolState, rejected: Optional[Set[Tuple[str, str, int]]] = Non
     stories: Dict[str, Optional[Story]] = {}
     prev: Dict[str, Optional[Story]] = {}
     rej_by_you: Dict[str, Story] = {}
-    for tf in STORY_TFS:
-        if tf == "MN1" and not config.ENABLE_MN1:
+    for tf, forced_dir in (overrides or {}).items():
+        if tf not in STORY_TFS:
             continue
-        ltf = LTF_OF[tf]
-        evs = storyline_events(tf, ltf, s[tf], s[ltf], p, start=0)
-        now = s[ltf][-1].t + TF_SEC[ltf] if s[ltf] else 0
-        valid = [e for e in evs if e.eff <= now]
-        cur = valid[-1] if valid else None
-        pv = valid[-2] if len(valid) >= 2 else None
-        if cur and rejected and (tf, cur.dir, cur.eff) in rejected:      # you rejected it: story line ended
-            rej_by_you[tf] = cur
-            cur = None
-        stories[tf], prev[tf] = cur, pv
+        if forced_dir == "none":
+            stories[tf] = None
+        elif forced_dir in ("bear", "bull"):
+            existing = stories.get(tf)
+            if existing and existing.dir == forced_dir:
+                continue
+            ltf = LTF_OF[tf]
+            bar = s[tf][-1]
+            stories[tf] = Story(
+                tf=tf,
+                ltf=ltf,
+                dir=forced_dir,
+                k=len(s[tf]) - 1,
+                bar_t=bar.t,
+                eff=bar.t,
+                level=bar.c,
+                level_kind="MANUAL",
+                qm_level=bar.c,
+                qm_close_t=bar.t,
+                same_bar=True,
+            )
 
     levels: Dict[str, List[Level]] = {}
     qmp: Dict[str, Set[float]] = {}
     rrej: Dict[str, List[Rejection]] = {}
-    for tf in (["MN1"] if config.ENABLE_MN1 and len(s["MN1"]) > 5 else []) + ["W1", "D1", "H4", "H1"]:
+    for tf in (["MN1"] if config.ENABLE_MN1 and len(s["MN1"]) > 5 else []) + [
+        "W1",
+        "D1",
+        "H4",
+        "H1",
+    ]:
         rj, _, act = scan(tf, s[tf], p, start=max(0, len(s[tf]) - 6))
         qset = {q.level for q in find_qms(s[tf], config.QM_W.get(tf, 1))}
         for lv in act:
             lv.qm = lv.price in qset
         levels[tf], qmp[tf], rrej[tf] = act, qset, rj
 
-    a = Analysis(st.symbol, price, last_t, pip, int(st.meta.get("digits", 2)), st.meta, s, stories, prev,
-                 rej_by_you, levels, qmp, rrej, limits or {})
+    a = Analysis(
+        st.symbol,
+        price,
+        last_t,
+        pip,
+        int(st.meta.get("digits", 2)),
+        st.meta,
+        s,
+        stories,
+        prev,
+        rej_by_you,
+        levels,
+        qmp,
+        rrej,
+        limits or {},
+    )
     zones.select_all(a)
     a.liquidity = zones.liquidity(a)
     for tf in STORY_TFS:
@@ -121,10 +197,13 @@ def analyze(st: SymbolState, rejected: Optional[Set[Tuple[str, str, int]]] = Non
 
 
 def analyze_live(st: SymbolState) -> Optional[Analysis]:
-    """analyze() with your story-line rejections and the daily trade limits applied."""
+    """analyze() with your story-line rejections, manual overrides, and daily trade limits applied."""
     try:
         from . import db
-        rejected, limits = db.rejected_storylines(st.symbol), db.daily_limits()
+
+        rejected = db.rejected_storylines(st.symbol)
+        limits = db.daily_limits()
+        overrides = db.story_overrides(st.symbol)
     except Exception:
-        rejected, limits = set(), {}
-    return analyze(st, rejected=rejected, limits=limits)
+        rejected, limits, overrides = set(), {}, {}
+    return analyze(st, rejected=rejected, limits=limits, overrides=overrides)

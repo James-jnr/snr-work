@@ -428,8 +428,11 @@ def _targets(a, d: str, entry: float, groups: List[tuple]) -> List[dict]:
             if beyond(kl.price):
                 if kind == "roadblock":
                     adv = "roadblock: pay yourself here or move to break-even"
+                elif kind == "weekly target zone":
+                    adv = "Weekly obstacle: macro target zone from Monthly/Weekly storyline"
                 else:
                     adv = f"{TF_NAME[tf]} key level in the story-line direction: main target when the higher story lines agree"
+
                 cands.append(
                     dict(
                         name=kl.name,
@@ -439,6 +442,7 @@ def _targets(a, d: str, entry: float, groups: List[tuple]) -> List[dict]:
                         advice=adv,
                     )
                 )
+
     liq = a.liquidity
     side = 1 if bear else 0  # low for sells, high for buys
     for key, nm in (
@@ -584,7 +588,12 @@ def build_setups(a, confirms) -> List[dict]:
         s1["story_tf"] = "D1"
         d1b = a.series["D1"]
         enter_by = d1b[-1].t + 2 * D1S if d1b else a.last_t + D1S
-        finish(s1, d, info, enter_by, [("H4", "roadblock"), ("D1", "daily key level")])
+        groups = [("H4", "roadblock"), ("D1", "daily key level")]
+        want = "bear" if d == "sell" else "bull"
+        if any(a.stories.get(t) and a.stories[t].dir == want for t in ("MN1", "W1")):
+            groups.append(("W1", "weekly target zone"))
+        finish(s1, d, info, enter_by, groups)
+
         s1["key"] = f"S1|{d}|{ds.eff}|{round((s1['entry'] or {}).get('price', 0), 6)}"
     out.append(s1)
 
@@ -616,15 +625,24 @@ def build_setups(a, confirms) -> List[dict]:
     if not cf:
         s3["reason"] = "no 4-hour rejection followed by a 1-hour break yet"
     elif a.last_t > cf.h4_t + 2 * H4S:
-        s3["reason"] = "last confirmation expired (it must happen inside the next 4-hour candle)"
+        s3["reason"] = (
+            "last confirmation expired (it must happen inside the next 4-hour candle)"
+        )
     else:
         d = cf.dir
         info = _entry_zone(a, d, "H4", "H1", ["H1"])
         s3["story_tf"] = "H4"
-        brk = "a structure break (QM)" if cf.break_type == "QM" else "an open-close level (OCL) break"
+        brk = (
+            "a structure break (QM)"
+            if cf.break_type == "QM"
+            else "an open-close level (OCL) break"
+        )
         kz = is_killzone(a.last_t)
         finish(
-            s3, d, info, cf.h4_t + 2 * H4S,
+            s3,
+            d,
+            info,
+            cf.h4_t + 2 * H4S,
             [("H1", "roadblock"), ("H4", "roadblock"), ("D1", "daily key level")],
             extra=dict(
                 cf_text=(
@@ -889,7 +907,10 @@ def _conditions(
             met=brk_met,
         ),
         dict(text="Outside Asia (the first two 4-hour candles)", met=not asia),
-        dict(text="Inside the London or New York kill zone (best timing)", met=is_killzone(a.last_t)),
+        dict(
+            text="Inside the London or New York kill zone (best timing)",
+            met=is_killzone(a.last_t),
+        ),
         dict(text="Daily trade limit not reached", met=not a.limits.get("blocked")),
     ]
 

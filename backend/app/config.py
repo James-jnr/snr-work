@@ -1,4 +1,5 @@
 """All tunables come from environment variables (see .env.example)."""
+
 import json
 import os
 from pathlib import Path
@@ -17,33 +18,45 @@ API_KEY = os.getenv("API_KEY", "")
 # --- storage / web UI ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.getenv("DB_PATH", str(BASE_DIR / "snr.db")))
-SETUPS_DIR = Path(os.getenv("SETUPS_DIR", str(BASE_DIR / "setups")))   # text copies go in SETUPS_DIR/all
-UI_PUBLIC = _b("UI_PUBLIC", False)   # True = web UI needs no key (local use only!)
+SETUPS_DIR = Path(
+    os.getenv("SETUPS_DIR", str(BASE_DIR / "setups"))
+)  # text copies go in SETUPS_DIR/all
+UI_PUBLIC = _b("UI_PUBLIC", False)  # True = web UI needs no key (local use only!)
 
 # --- trade plan (course defaults) ---
-SL_PIPS = _f("SL_PIPS", 20)            # course: 20 pips
-SL_MAX_PIPS = _f("SL_MAX_PIPS", 25)    # course: 25 max
-TP_PIPS = _f("TP_PIPS", 100)           # course: 100 pip intraday target
-RISK_PCT = _f("RISK_PCT", 1.0)         # course: 1% on confirmation entries
+SL_PIPS = _f("SL_PIPS", 20)  # course: 20 pips
+SL_MAX_PIPS = _f("SL_MAX_PIPS", 25)  # course: 25 max
+TP_PIPS = _f("TP_PIPS", 100)  # course: 100 pip intraday target
+RISK_PCT = _f("RISK_PCT", 1.0)  # course: 1% on confirmation entries
 RISK_PCT_REDUCED = _f("RISK_PCT_REDUCED", 0.5)  # my addition for weaker alignment
 MIN_GRADE = os.getenv("MIN_GRADE", "B").upper()  # A best, B, C weakest
 
 # --- filters ---
-ASIA_HOURS = _f("ASIA_HOURS", 8)       # first two H4 candles of the server day
+ASIA_HOURS = _f("ASIA_HOURS", 8)  # first two H4 candles of the server day
 ENTRY_MAX_DIST_PIPS = _f("ENTRY_MAX_DIST_PIPS", 60)
-CONFIRM_WINDOW_H = int(_f("CONFIRM_WINDOW_H", 4))  # confirmation must happen inside the next 4-hour candle
+CONFIRM_WINDOW_H = int(
+    _f("CONFIRM_WINDOW_H", 4)
+)  # confirmation must happen inside the next 4-hour candle
 TAP_TOL_PIPS = _f("TAP_TOL_PIPS", 1.0)
-ZONE_PIPS = _f("ZONE_PIPS", 20)                  # H4 rejection must sit within this of a W1/D1 level
+ZONE_PIPS = _f("ZONE_PIPS", 20)  # H4 rejection must sit within this of a W1/D1 level
 HTF_LEVEL_AGE_D = int(_f("HTF_LEVEL_AGE_D", 120))  # ignore D1 levels older than this
-SIGNAL_COOLDOWN_H = _f("SIGNAL_COOLDOWN_H", 8)     # min hours between alerts in the same direction
+SIGNAL_COOLDOWN_H = _f(
+    "SIGNAL_COOLDOWN_H", 8
+)  # min hours between alerts in the same direction
 ENABLE_MN1 = _b("ENABLE_MN1", True)
-NO_TRADE_DATES = {d.strip() for d in os.getenv("NO_TRADE_DATES", "").split(",") if d.strip()}
+NO_TRADE_DATES = {
+    d.strip() for d in os.getenv("NO_TRADE_DATES", "").split(",") if d.strip()
+}
 
 # --- level / structure detection strength (tunable) ---
-PIVOT_N = {tf: int(_f(f"PIVOT_N_{tf}", d)) for tf, d in
-           {"MN1": 1, "W1": 2, "D1": 2, "H4": 2, "H1": 1}.items()}
-QM_W = {tf: int(_f(f"QM_W_{tf}", d)) for tf, d in
-        {"W1": 2, "D1": 2, "H4": 2, "H1": 2}.items()}
+PIVOT_N = {
+    tf: int(_f(f"PIVOT_N_{tf}", d))
+    for tf, d in {"MN1": 1, "W1": 2, "D1": 2, "H4": 2, "H1": 1}.items()
+}
+QM_W = {
+    tf: int(_f(f"QM_W_{tf}", d))
+    for tf, d in {"W1": 2, "D1": 2, "H4": 2, "H1": 2}.items()
+}
 
 PIP_OVERRIDES = json.loads(os.getenv("PIP_OVERRIDES", "{}"))  # {"XAUUSD": 0.1}
 
@@ -61,20 +74,47 @@ DISPLAY_TZ = os.getenv("DISPLAY_TZ", "UTC")
 OFFLINE_AFTER_SEC = int(_f("OFFLINE_AFTER_SEC", 600))
 
 # --- charts ---
-CHARTS_IN_ALERTS = _b("CHARTS_IN_ALERTS", True)      # attach per-timeframe level charts to alerts
-CHART_THEME = os.getenv("CHART_THEME", "light")      # light | dark
-CHART_STYLE = os.getenv("CHART_STYLE", "line")       # line (closes, as in the course) | candles
+CHARTS_IN_ALERTS = _b(
+    "CHARTS_IN_ALERTS", True
+)  # attach per-timeframe level charts to alerts
+CHART_THEME = os.getenv("CHART_THEME", "light")  # light | dark
+CHART_STYLE = os.getenv(
+    "CHART_STYLE", "line"
+)  # line (closes, as in the course) | candles
 
 # --- v3: levels, zones, limits, interface ---
-ZONE_OVERLAP_PIPS = _f("ZONE_OVERLAP_PIPS", 0)      # 0 = automatic (gold 25, JPY 15, other forex 12)
-MIN_GAP_PIPS = _f("MIN_GAP_PIPS", 3)                # key level may sit this far on the wrong side of price
-MIN_TARGET_PIPS = _f("MIN_TARGET_PIPS", 8)          # ignore targets/obstacles closer than this
-APPROACH_PIPS = _f("APPROACH_PIPS", 0)              # alert when price is this close to a Daily-setup zone (0 = auto)
-MAX_TRADES_PER_DAY = int(_f("MAX_TRADES_PER_DAY", 3))      # mentorship rule
-MAX_CONSEC_LOSSES = int(_f("MAX_CONSEC_LOSSES", 3))        # mentorship rule
-SUPPRESS_WHEN_LIMIT = _b("SUPPRESS_WHEN_LIMIT", False)     # True = no setup alerts once a limit is hit
+ZONE_OVERLAP_PIPS = _f(
+    "ZONE_OVERLAP_PIPS", 0
+)  # 0 = automatic (gold 25, JPY 15, other forex 12)
+MIN_GAP_PIPS = _f(
+    "MIN_GAP_PIPS", 3
+)  # key level may sit this far on the wrong side of price
+MIN_TARGET_PIPS = _f("MIN_TARGET_PIPS", 8)  # ignore targets/obstacles closer than this
+APPROACH_PIPS = _f(
+    "APPROACH_PIPS", 0
+)  # alert when price is this close to a Daily-setup zone (0 = auto)
+MAX_TRADES_PER_DAY = int(_f("MAX_TRADES_PER_DAY", 3))  # mentorship rule
+MAX_CONSEC_LOSSES = int(_f("MAX_CONSEC_LOSSES", 3))  # mentorship rule
+SUPPRESS_WHEN_LIMIT = _b(
+    "SUPPRESS_WHEN_LIMIT", False
+)  # True = no setup alerts once a limit is hit
 HEARTBEAT_SEC = int(_f("HEARTBEAT_SEC", 15))
 LIVE_WINDOW_SEC = int(_f("LIVE_WINDOW_SEC", 45))
 SHOW_INVALIDATION = _b("SHOW_INVALIDATION", True)
 PORT = int(_f("PORT", 8000))
-BASE_URL = os.getenv("BASE_URL", "")          # e.g. http://192.168.1.20:8000 ; empty = detect the local network address
+BASE_URL = os.getenv(
+    "BASE_URL", ""
+)  # e.g. http://192.168.1.20:8000 ; empty = detect the local network address
+
+
+# ---------------------------------------------------------------------
+
+# In backend/app/config.py:
+GOLD_SL_MAX_PIPS = _f("GOLD_SL_MAX_PIPS", 25.0)
+GOLD_TP_PIPS = _f("GOLD_TP_PIPS", 100.0)
+FX_SL_MAX_PIPS = _f("FX_SL_MAX_PIPS", 10.0)
+FX_TP_PIPS = _f("FX_TP_PIPS", 30.0)  # 1:3 ratio
+BE_TRIGGER_R = _f(
+    "BE_TRIGGER_R", 1.0
+)  # Move SL to entry once +1R (or H1 roadblock) is reached
+MIN_RR = _f("MIN_RR", 2.0)  # Skip setups where structural target is < 2.0R
