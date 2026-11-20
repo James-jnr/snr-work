@@ -555,10 +555,18 @@ def build_setups(a, confirms) -> List[dict]:
         ceil = _ceiling(a, d, ctx)
         su["context"], su["ceiling"] = ctx, (ceil.as_dict() if ceil else None)
         su["targets"] = _cap(a, d, _targets(a, d, ep, groups), ceil, ctx, ep)
+        is_gold = a.symbol.upper().startswith(("XAU", "GOLD"))
+        max_sl_pips = config.GOLD_SL_MAX_PIPS if is_gold else config.FX_SL_MAX_PIPS
+        default_tp_pips = config.GOLD_TP_PIPS if is_gold else config.FX_TP_PIPS
+        sl_dist = max_sl_pips * a.pip
+        sl_price = ep + sl_dist if d == "sell" else ep - sl_dist
+        fixed_tp = ep - (default_tp_pips * a.pip) if d == "sell" else ep + (default_tp_pips * a.pip)
+        su["sl"] = round(sl_price, a.digits)
+        su["sl_pips"] = round(sl_dist / a.pip, 1)
+        su["fixed_tp"] = round(fixed_tp, a.digits)
         su["invalid_if"] = dict(
-            price=lvl["price"]
-            + (1 if d == "sell" else -1) * overlap_pips(a.symbol, a.pip) * a.pip,
-            text=("a 1-hour candle closes " + ("above" if d == "sell" else "below")),
+            price=su["sl"],
+            text=f"SL ({su['sl_pips']} pips max) or 1-hour close {'above' if d == 'sell' else 'below'}",
         )
         v = _validity(a, su["story_tf"], ctx, enter_by, ceil)
         su["enter_by"], su["stays_valid"] = v["enter_by"], v["stays_valid"]
