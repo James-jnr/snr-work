@@ -1,0 +1,374 @@
+00:00:02 - 00:01:06
+now before everything this is what I want you to do okay so we need to detox everything right now so what you should do is remove all of the unnecessary time frames okay so by unnecessary time frames I mean the lower time frames like M1 M5 M15 if you're using them cut that off okay because if you are trading this way we need to keep it simple as possible okay so we should remove all the unnecessary time frames and remember that these are the the five time frames that we will be using okay so don't take
+
+00:00:34 - 00:01:25
+any custom time frames don't do any of that these are the only time frames that we'll be using because like if you stick to these time frames if you master these time frames you wouldn't even need a huge monitor or whatever to trade okay just your phone is more than enough because on on mt4 these are the these are the time frames you have right so you can even trade using mt4 itself okay so uh just follow the instructions that I give you so just remove all the unnecessary time frames if you're using
+
+00:00:59 - 00:01:54
+them okay but for the first few days it's okay to use them but don't like these Concepts work on the lower time frames as well but then again just stay out of the lower time frames because the lower time frames are always messy you know that right so just stay out of the lower time frames so that's always better okay so these will be the five time frames that we're using monthly weekly daily H4 and the H1 now remember monthly weekly and the daily time frame these three these three time frames will
+
+00:01:27 - 00:02:24
+be the time frames that we're using for direction okay okay so for direction these are the three time frames that we use and then the H4 and the H1 will be for confirmation entries I'll show you now there's a very nice setup with H4 and H1 happens almost on a daily basis okay a confirmation setup something like a full margin setup like if you have that yeah like most of these Malayan Traders Go full margin on setups like this so I'll teach you that as well okay but might take some time but that's okay
+
+00:01:55 - 00:02:52
+I'll teach you uh H4 and S1 will be the time frame for confirmation entries to refine the higher time frame zones and all of that these are the two time frames that we'll be using okay so once again daily weekly and monthly will be the direction time frame so we will we will identify we will determine the direction on these three time frames and then your entries are going to come from H4 and then H1 okay so I'll show you how it's done later because there is a basic session I wanted to show you this stuff
+
+00:02:23 - 00:03:20
+only okay so yeah um yeah um brother yeah um I have a question so will we be only Trading gold with this strategy no you can trade anything you want okay I'm trading only gold okay you can trade whatever you want but I trade only gold okay so now these are the five time frames okay these are the five time frames now simply why do we like you need to have that question right why are we looking at Direction on these time frames only because they the thing now there's a concept called story lines
+
+00:02:52 - 00:03:48
+okay there's something called decision points we'll be going over all of that they very important stuff but now with story lines what we do is we remember story lines are what we'll be using for directions story lines and then decision points but yeah now for now story lines are only on The Daily weekly and the monthly time frame okay story lines are only on The Daily weekly and the monthly time frame because now there's the thing now let's say just a simple example I know you you guys might know this might
+
+00:03:20 - 00:04:17
+not so I'll just make it simple now let's say we have something from point A to point B we have something like this okay so now we know that daily is bearish so this is what we're expecting we're expecting the daily time frame to drop from here to here this is what we are expecting just a random example okay so now how would this look like on a daily time frame now on The Daily time frame it could be just one single candle right let's say we know the direction we know that daily want wants to move from
+
+00:03:48 - 00:04:43
+up here to down here from point A to point B so on The Daily time frame it is just one single candle but what happens is if you go into the lower time frames what would you have now the direction of the higher time frame is from here here but on the lower time frames in the middle of this you might get a bullish breakout now if you are with SMC you might say stop F breakout structure strong low let me buy it here and then what happens it fails because why it will fail the the real reason it's
+
+00:04:16 - 00:05:13
+dropping is to remove from point A to point B from this daily Zone to this daily zone so is it okay for you to just randomly buy inside of a 1 hour low no it's not because that is why just a simple example this is the reason why we stay out of the lower time frames we only go into the lower time frames for entries and to refine your uh key levels and all that stuff okay so that is that now let's get started with the very basics of support and resistance okay so let's go one by one okay I'm not going
+
+00:04:44 - 00:05:35
+to show you everything in one session no we're going to go one by one we're going to do the basics of SNR like how we identify key levels and all of that and then in the next session we can go through trend lines because trend lines are also important okay so yeah trend lines are important we'll go over that trend lines and then the next session we will go through story lines and decision points okay and then from the fourth session onwards we're going to combine all of it I show you what to do at the
+
+00:05:10 - 00:06:07
+beginning of each month I'll show you what to do at the beginning of each week I'll show you what to do at the beginning of every day and not only that as soon as every single H4 candle closes I'll tell you what to do okay because H4 candle closings are very very important for intraday setups okay so we will go through all of that do not worry but um you need to understand the Basics before doing any of that stuff okay so let's get started now it's like this okay another thing to point out is
+
+00:05:38 - 00:06:49
+that remember we will be using the line chart a lot okay we will be dealing with the line chart a lot okay now we we will go through candlesticks as well but mainly we'll be using the line chart because um yeah this is important and also if you don't want to just switch back and forth from candlesticks to line chart what you could do is go to indicators and then yeah you might not be sorry but yeah uh take the moving average okay take the moving average and then set its length to one and yeah there you go you have the
+
+00:06:14 - 00:07:11
+line chart on the Candlestick chart itself okay so if you don't want to go back go back and forth on this this is what you could do you have the line chart and the Candlestick both together okay but I don't I don't do this it's messy right look at this I want to have my charts as clean as as possible okay so I'll take it off if you want you can do this that's that's perfectly fine okay now let's get started now first thing the basic support and resistance okay so the basic support and resistance
+
+00:06:41 - 00:07:54
+will look like this okay a resistance is something like this the a formation this is what we call a resistance on a line chart if you have this a formation we call it a resistance okay we call it a resistance and then same thing if we have the V format you can see this right this looks like an a this looks like a V so if you have a V formation on a line chart we call it a support okay very simple we call it a support now remember this resistance is formed when you have a buy a bullish candle and a bearish candle okay when
+
+00:07:18 - 00:08:21
+you have a bullish candle followed by a bearish candle we have a resistance when we have a bearish candle followed by a bullish candle we have a support I'll show you examples don't worry okay so very simple this is okay let's go through this and then I'll show you examples in the chart okay so yeah that is that and then there's another one it is something like this now what is this this is a resistance right that's a resistance right there because I told you now what if the resistance is
+
+00:07:49 - 00:08:59
+broken right once the resistance is broken it turns into a support remember that okay so once the resistance is broken it will turn into a support so we call this RB yes okay resistance broken turning into a support so this was a resistance now it is broken then it turns into a support that is why we call it RBS very simple okay so I I'll show you examples I would expect a move like this this RBS okay and then same thing when it comes here what's this this a support right this right here is a support I
+
+00:08:24 - 00:09:36
+told you when we have the v formation we call it a support now what if the V is broken right what if this gets broken so once a support is broken remember once a support is broken it'll turn into a resistance like this okay we could call it a resistance and so we call this SBR okay the names aren't necessary as long as you understand the logic behind it it's more than enough okay so because why first of all it was a support and it got broken right here so then it acts as a resistance okay so svr very very simple
+
+00:09:00 - 00:10:02
+so that's that and then there's another type there's another type that is you can call it head and shoulder you can call it left shoulder you can call it qml yeah now most of the people call it a qml something like this the name the name is necessary once again something like this okay this is what we call the left shoulder okay this is what we call the left shoulder you can call it head and shoulder but just simply call it a resistance okay just simply call resistance because that is
+
+00:09:31 - 00:10:44
+also this a formation right that is also an a formation and then same thing here this what we call a qml once again it's just a support right this this is just a support we could expect moves like this okay now now you might be confused okay we have this Zone here we have this Zone here we have this last resort the resistance in here you can call it a last resort as well because this the last Zone you have right the last reversal Zone you have the resistance so you can call it a last result whatever and yeah now you might
+
+00:10:08 - 00:11:02
+be Wonder we have three zones which one am I going to pick okay so that's something for the next for the advanced stu okay do not do not focus on that right away now first thing you need to do is train your eyes to see these key levels as soon as you open the charts because it's very important okay and then yeah so a bullish candle and a bearish candle will create a resistance a bearish candle and a bullish candle will create a support once a resistance is broken it turns into a support once
+
+00:10:35 - 00:11:34
+support is broken it turns into a resistance and then we have this qls ORS Head and Shoulder whatever and then there's another type that one I'll show you in the chart itself okay so let me delete this and I'll show you some examples of this starting from let's start from the weekly time frame let's see some examples okay um I'm trying to show you some clear examples yeah you can see this very okay what do we have in here a bullish candle and a bearish candle so what is this a
+
+00:11:04 - 00:12:07
+resistance right this right here is what we call a resistance so you can see this right that is the a formation right here you put the magnet always use the magnet tool when you draw this zone so it see it just automatically goes into the closing prices like this so there we go okay now do not confuse this I see many people making this mistake okay so when you're marking out this resistance remember when when we're dealing with support and resistance what we deal with is closing prices of candles okay now I see most
+
+00:11:35 - 00:12:31
+people marking out this this in here is this a closing price no this is not right this is not a closing price this is an opening price this is the closing price because the line chart only prints the closing prices if I put if I put it here and go to the line chart see it's out of nowhere okay so always make sure you Market out on the closing prices so there we go the closing of this bullish candle is the one that created the resistance so where did the market come into right here see that came right here
+
+00:12:04 - 00:13:04
+and it dropped so now what you could do is now these are advanced stuff okay do not think very deeply about this okay so these are just advanced stuff I'm going to show you now what you could do is understanding that this right here is a weekly resistance you could go into the daily time frame and then make some refinements so if you go to the Daily inside of this daily resistance what did we have we had more zones on The Daily right we had one here what is this this is SBR right first of all it
+
+00:12:34 - 00:13:37
+was a support now it is broken so it can act as a resistance and then we have another Zone in here that is another resistance on The Daily time frame can you see that okay so we have that we have that there what happens what happens let's see there it goes now can you see the Precision okay so it's awesome once you understand this so look at this Taps and then it starts to melt okay so rather than just directly pulling the trigger from the weekly time frame what you could do is refine it to the daili okay
+
+00:13:06 - 00:13:58
+RS to the H4 RS to the H1 whatever and then take your trade so there we go okay you see that right so I'm trying to these are just Basics okay do nothing okay then why didn't it go here okay so these are the questions that you might have right okay why didn't it go here okay so yeah you will understand them once we go into the Advan sessions don't worry about that okay so you see that right that is a simple resistance that's a very simple resistance and and now did you see where this drop came from where
+
+00:13:33 - 00:14:40
+did this come from what is this by now you need to understand this resistance right or else what's the name you want to call it you can call it um Head and Shoulder right or as left shoulder whatever name you want to call it can you see that so that is that and then look at this tapped and then it melted can you see that okay so very nice Trade It Taps and then it melts okay because that's a weekly level okay that is a weekly level so there we go that is also a type of resistance and oh
+
+00:14:05 - 00:15:13
+look at this one where did this buy come from where did the buy come from a support now trust me now almost like 99% of the Swing highs and lows are made on these as and vs okay the highs the high of the month high of the week high of the day whatever it is they are always made uh yeah they always made on a and vs okay they are always made on these a and v so remember that very well okay you need to remember that very well just just practice that and see okay don't take my my words for granted always
+
+00:14:40 - 00:15:44
+practice and see you can see this right we have the V look at look at the Precision look at the Precision like we're still on the weekly time frame okay we still on the weekly time frame no draw down basically see this the 25 bip draw down who cares right so there we go we had that and what else let's see let's see some more oh yeah look at this one I put it here where did the buy come from right where did the buy come from now what you could do is refine this into lower time frames now look at this on the weekly we
+
+00:15:12 - 00:16:19
+had a support very clear okay and then if you go to the Daily we still had that support followed by a long week if you go to H4 we could always refine this right we could always refine this into lower time frame so I don't think it tapped here but yeah I think it tapped into these areas looks like what this is uh a left shoulder right I think it's a left shoulder yeah that's a shoulder so what happens look at this there it goes see that flies Okay then F now if you if you are in my channel you would
+
+00:15:45 - 00:16:48
+have seen how I have my entries here right entries here entries here here here here all these I'll show you how to get all of them okay because once the direction is clear all you have to do is just find out the zone for an okay okay now look at this one I have a question so the example you just showed um was the left shoulder fresh now once again you might be exposed to this stuff okay we will talk about fresh and nonf fresh all that later okay do not think of any of this because there are people who do not even
+
+00:16:17 - 00:17:20
+know the basics okay so we're not going to talk about any of them right now okay so don't think about fresh or un fresh or whatever not right now okay okay so let's see some um yeah look at this see that what's that a support right that's a support see look at the reactions okay we have V's we have all that stuff and let's see let's see some more examples because once you train your like as soon as you open the charts okay if you could see them right away it's very important okay it's very very
+
+00:16:50 - 00:17:55
+very important that you need to see them as soon as you open the CHS you'll be struggling okay so let's see look at this one where did this drop come from right I told you a bullish and a bearish candle will create what a resistance right a bullish and a bearish candle will create a resistance so what do we have in here a bullish and a bearish candle so we have this now what you could do is inside of this Zone you could refine it into lower time frames so if you go to daily this is a daily s
+
+00:17:22 - 00:18:21
+spr can you see that okay support broken turning into resistance but we need to do a refinement right so let's go to H4 if we go to H4 now we can do a slight refinement of this Zone into this Zone what is this a resistance right H4 resistance right here now you might wonder why are we not going to refine it into this left shoulder so why should we right the we zone is here a refinement should be above the Zone not below the Zone okay so there we go we have that zone in here okay we have that zone and
+
+00:17:52 - 00:19:10
+then what happens there it drops see that very nice okay so so yeah that was a nice trade that was a nice trade from all those areas and what else what else let's see let's try to see more examples of um spr maybe yeah look at this very simple first of all this was a support right this right here was a support and then the support was broken here as soon as this candle ended the market went up reacted to that support and made another drop okay so this is SBR can you see that so once you
+
+00:18:31 - 00:19:35
+go to the line chart everything starts to make sense okay everything start to make sense all these reversals all these moves are from the line chart okay from the closing prices which means look at this this where did this come from right here see look at the prec it's a v right we talked about this that's a v there we go Taps starts to move up okay then it starts to move up so what else yeah these were of course from trend lines I took this from trend lines this see that look at the move like
+
+00:19:04 - 00:20:12
+even um was Thursday's buy I think even Thursday's byy these were from trend lines I'll talk about trend lines because a trend line isn't just the Confluence most people use it only as confence but a trend line is also a good way to determine Direction okay I'll show you all of that later yeah look at this one at where the buy came from we had a trend line that was broken we call this a break and retest trend line okay look at the move see that break so it broke right here right it broke right here came back
+
+00:19:39 - 00:20:46
+into the trend line starts to move up so if you're buying it here yeah we will talk about all this stuff see that's a 240 pip move okay so yeah good stuff if you understand this well you will always have some good entries okay you're going to always have some good entries look at this what is that once again RPS resistance broken turns into a support right then it turns into a support okay so that's the very basic stuff now there's another type of SNR we call it open close levels okay we call it open
+
+00:20:13 - 00:21:10
+close levels now open close levels are made when you have same type of candles we say let's say now let's say we have two bullish candles then an open close is made let's say we have two bearish candles then we then once again then open close made see what is this first bullish candle and another bullish candle so this right here is what we call the open close level okay we call it an open close level because simple I told you when we when it comes to SNR we always focus on the closing prices right
+
+00:20:41 - 00:21:37
+so this is the closing price of this bullish candle that could be used as a point of Interest okay this could be used as a key level whatever see two bullish candles even this one two bullish candles right could act as a support even this one two bearish candles again although they didn't play out I'll tell you how to pick the best zones okay there's a way to filter out zones because now now once I teach you everything now you might be looking so we have it everywhere what am I going to
+
+00:21:09 - 00:22:04
+use for entries okay so don't worry about entries we'll go through them okay now right now your job is to just identify these levels very simple that's it okay so yeah that's about now let's let's look some examples of open close levels okay because I love these open close levels very well um very much actually because I'll show you later okay because when it comes to decision points we're always dealing with these open close levels okay so I will show you examples yeah now this the same
+
+00:21:36 - 00:22:32
+thing with the open close levels now let's say we had two bearish candles right let's say we had two bearish candles like this so what is the open close level it is this level right this is the open close level because this is the closing price of this bearish candle now first of all what do we expect we expect a move like this right because it is a resistance but once again it's the same logic if it breaks it could act as a support okay because like I told you it is a type of SNR okay so if a support is
+
+00:22:04 - 00:23:00
+broken it turns into resistance if a resistance is broken it turns into support very simple okay so let me show you some examples of open close levels now yeah here we go here we have a very nice example see it's an open close right two bullish candles created the closing price in here where did the market come into came right here started moving up now what you could do is if you are not okay with entering directly you could refund this into lower time frames right now what do we have on the
+
+00:22:31 - 00:23:39
+H4 time frame another open close level very close to the Daily level so you can refine it to that okay if you go to H1 let's check H1 H1 is the last time frame that we going to yeah see daily level H4 level maybe on the H1 we have another open close level can you see so let's see how the market reacted I think it tapped into the H4 didn't go back to the H1 oh yeah it did can you see that so this how we could do the refinements understanding that this is a daily Zone you can refine it to the nearby lower time frames like
+
+00:23:06 - 00:24:15
+this see that look at the position Taps starts to move up okay and then it starts to move up so that's that so let's see some more open close levels um yeah on the weekly we had some good ones yeah look at this one what is this this an open close right that's an open close LEL but what did this candle do it broke through it see that it broke through it so once it is broken you can expect it to act as a support now once again you might okay why not this level okay so those are once again stuff that you will
+
+00:23:45 - 00:24:43
+understand once we talk about the basics okay so there we go now what you could do is this a weekly level refining it to the Daily level see that and if you want to do more refinements uh I don't see anything on the4 you can can refine it to this but we'll talk about why we're not going to refine it there and then yeah look at this we had trend lines or you might wondering what type of a trend line this is this is a type of a break and retest trend line okay so we will talk about trend lines later now look at
+
+00:24:14 - 00:25:30
+the prion what I want to show you is the Precision look at that see that where you tap into very accurately right into the daily and the weekly level look at that Taps boom like right away it doesn't even mess around on that area right away it runs up to look at this 280 Pips just like as soon as it Taps see Taps from the next SC on it starts to fly okay so once you understand this it is the it gets better and better look at this I'll show you some more weekly on the weekly look at this
+
+00:24:52 - 00:26:15
+uh let me see e even this one where did this tap into very accurately where did this step into open close can you see it right here open close or is right here these are decision points we will go through decision points okay we call this a rising point so look at the move look at this you can call this [Music] um this right here is a resistance now right because I told you once the support is broken it turns into a resistance now can you see how this level was used as a support see rejected here rejected here rejected here but
+
+00:25:33 - 00:26:41
+this candle broke it so once a support is broken now first of all at this point if I put the replay tool here at this current moment this zone is what this zone is a support right this zone is a support that is why the market kept closing above it but once it's broken like this once it's broken it turns into what once it's broken it turns into a resistance right it turns into a resistance so what happens there it go steps and then it starts to drop can you say so very important very very
+
+00:26:08 - 00:27:06
+important that you pay attention to these levels okay I'll show you how to filter out the good levels and all of that later right now all you have to do is just understand the logic behind this okay why we're choosing closing prices and all that stuff okay look at this one where did the buy come from where did the buy come from you can see these areas did it tap here I think so yeah even this area can you see it it was used as a resistance in here a resistance in here a resistance in here
+
+00:26:36 - 00:27:37
+and then it's broken it turns into a support can you see that you can see the Precision right I can't make this up okay you can see the Precision very clearly look at that Taps starts to move up right and then even even this one even this one you know if you do this you'll be confused but I'll show you how to do this look at this Taps starts to move up like all of these weekly lows are made on closing prices of some time frame look at this the low where is that made open close can you
+
+00:27:07 - 00:28:13
+see that where is this low made open close see that look at the entries then if you go into the lower time frames the perks are staying on the higher time frame because the lower time frames would have gotten you confused see buy Here buying it here right buying it here look at this buying it here what you could do is refinements if you wanted to this one into this RBS see that you see the Precision right this is what I'm trying to show you you see the Precision this one maybe you can refine it to uh where can we refine this
+
+00:27:40 - 00:28:41
+in to I don't see anything on the H4 we have this RBS I think the RBS is what we could have used here might have got stopped out though because the draw down see normally we have a 20 to 25 bips stop loss ah yeah 25 bips is safe from The Zone 25 Pips would have kept you in now don't think of the draw down okay because your targets if you're trading on the higher time frames you're not just going to close it with 20 to 30 Pips no you're always going to have 100 to 150 pip targets or more than that
+
+00:28:11 - 00:29:14
+okay so yeah look at this one this Zone you could have refined into maybe here see what is that RBS okay so this is how you could refine zones and do all that stuff so you see this right you see where all these lows are made and this is just on the lower time frame frame I'm sorry on the higher time frames on the weekly time frame you say can you see the Precision look at that buy buy buy buy okay so very precise if you understand it well okay if you understand it it is very very precise now I took a sell this uh this
+
+00:28:43 - 00:29:52
+day this was on Friday how did I take the sell what is this an open close right we call it we call this an open close you can see that very clearly then what you could do is inside of this open close you can go into the lower time frames and then do some refinements let's go to the Daily did we have anything to refine this into no just a long week let's go to the H4 now if you go to H4 of course we had many zones inside of this see we had this resistance here we had this resistance here can you
+
+00:29:17 - 00:30:18
+say but I I did not take any of this okay I did not refine it to the H4 levels I'll tell you why later if we go to H1 on the H1 we had two levels that we could refine into so we call this you can all even call this multi-time Frame because inside of the weekly Zone we had this H1 open close and we had the H1 resistance can you see that so where did the cells come from right there from inside of the weekly Zone we had the H1 level so you see where the sales came from right Taps and then it starts to
+
+00:29:48 - 00:30:51
+drop look at that look at the drop you have a drop of yeah 340 Pips that day on a Friday okay so this is how good it is if you pay attention Okay if you pay enough attention like look at this one even this sell oh it was awesome the next confirmation entry let's see why did I tell you I told you a buy and a sell candle will create a resistance right so now what do we have here a bullish candle a bearish candle so this should be a resistance can you say yeah you can't see it very clearly unless you zoom in a
+
+00:30:20 - 00:31:13
+lot see that's the a formation but that's why I told you a bullish candle and a bearish candle now once again with broker there are problems with Brokers and you might see stuff like this now look at this the closing price is here the opening price is here you might be wondering which one am I going to use then remember simply you're always going to use closing prices okay and another thing to point out is that if you are trading gold this is the this is the broker you should use okay saxo okay I
+
+00:30:47 - 00:31:48
+don't know how to pronounce it maybe that's how okay saxo whatever this the broker that you should use because the reason is we will be dealing with the H4 time frame a lot like so much for confirmation entries and many other stuff okay so we'll be dealing with the H4 time frame the the problem is uh different Brokers have different closing types so the H4 candles will differ now saxo is the most closest one to mt4 okay saxo is the most closest one to mt4 okay now let me show you the sell
+
+00:31:17 - 00:32:16
+and then yeah look at this this a resistance that's a resistance right on the H4 and then what happen the market Taps back into the resistance and boom melts can you see so you see where the sales came from right most people won't even have an idea where it came from but yeah that is where it came from now look at this if you go into other Brokers like oanda now oanda is very accurate for Forex pairs okay like even if I I don't trade this anymore but when I was trading it w was the most accurate see
+
+00:31:46 - 00:32:48
+now for Forex pairs I only have W so that's enough but for gold you can't use W the reason is yeah I told you the reason already now look at look at the difference okay look at this just have a look at this H4 candles on sex and then if you go to w see it's completely different see this wasn't even there on any mt4 broker what else see these are broker issues so don't use Wanda Wanda is not accurate in my opinion like I don't trust to do my analysis I do my analysis only on meta
+
+00:32:17 - 00:33:28
+trade itself I don't do my analis on mt4 so the closest one to MP4 is sax okay so please you're trading gold do not use any other broker use this one this the most accurate BL okay and yeah now for mt4 I use IC markets okay IC markets and Robo Forex so that's that now you can understand this right you can understand all of these now open close right you can see the open close levels you can see um spr RBS and all of that so everything all these reversal points all these turning points are made on them okay
+
+00:32:53 - 00:33:55
+made on them so what you should do is you need to be able to spot them very quickly like if I come here look at this now what is this see now you after time some time you don't even have to go into the line chart okay you can you can spot the levels easily now we had this we had these levels if you wanted to sell now let's say how can we refine this level this is a weekly level right that's a weekly SBR now remember uh I'm sorry RBS oh no no no SBR sorry okay the names aren't
+
+00:33:24 - 00:34:17
+necessary okay if you understand the logic it's more than enough first of all it was a support now it is broken so we could expect it to act as a resistance now what you could do is now if you place direct trades on the higher time frame levels you might have to suffer from a little bit of draw down so the best thing to do is Mark out the higher time frame level go into the lower time frames and then try refining it into those lower time frame levels okay so that and then what you do is you don't
+
+00:33:50 - 00:34:44
+place your direct entry here you place it from where you refined it that is the that is the reason we do a refinement right if you're placing it here no there's no point of doing a refinement so what you could do is Mark out your high time frame level go to the lower time frame and then do the refinements if you go to daily now in here on the daily of course I don't see anything but if you go to H4 remember the line remember the line we're dealing with price levels what is this a
+
+00:34:16 - 00:35:19
+resistance see that a weekly resistance now you might think oh the market has already tapped into that now that is on the H4 but did the weekly ever tap into that no okay so that is why higher time frames matter we will go through all of that and then look at this where did the sell come from right there see that like instantly look at look at the drop it made oh 300 Pips see so these are well planned trades I'll show you yeah I'll show all all of that stuff later can you see that like even right now where did the sell
+
+00:34:48 - 00:35:55
+come from once again from that Weekly level so you see the importance of this higher time frame levels right they can be used again and again for intraday setups and all that stuff see setting here trades here and even I think it was the Buy in here right or is uh yeah there was a Buy in here using the same concept yeah this one in here what is this this is a daily support right this right here is a daily support so what can we do go into the lower time frames and do some refinements if you do not want to take
+
+00:35:23 - 00:36:29
+direct entries from this Zone you go to H4 we did have support in here right here you can refine it into that but if you go to H1 there something way more clear the last result okay in here what's the last result we had we had a support that was never used see that H1 support why is this H1 support now you might wonder why didn't we use this why didn't we use this we we don't have to use this right because we always choose zones first of all from the higher time frame so this where the
+
+00:35:56 - 00:37:00
+daily Zone was and then we do a little refinement of it into the H1 Zone okay into the H1 zone so what happened okay so look at look at the reactions from this so we had this previous days liquidity we we will talk about SMC as well a little bit okay A a very little bit of SMC is involved you don't even have to know the advanced stuff no ranges and all that okay but here look at this what happened oh see that where did this come from where did this come from right from the H1 level look at this from here
+
+00:36:29 - 00:37:39
+where is your next reversal Zone we have zones here buying here selling here you can do more refinements if you are on the daily time frame see open close or else spr can you see that there the drops you see the Precision right you you can't make this up look at the Precision look at the Precision sell a sell here or maybe a sell here open close we call this a dropping point because it broke through yeah we will go through all that look at this another drop in here okay so all you have to do is just understand
+
+00:37:04 - 00:38:06
+like even the current buy I did not take the current by didn't take a direct entry but I'll explain once we go into story lines why the why the market reacted to this open close in here can you see that there an open close right with some liquidity sitting above it here or maybe here and then what happened the market did that can you see the Precision look at this no draw down see that that is why I keep telling you to practice okay if you understand the logic behind this it's more than
+
+00:37:34 - 00:38:35
+more than enough okay it is yeah more than enough all you have to do is understand so there we go so you see the Precision right you see the Precision and and don't think you can only trade gold with this you can trade EU you can trade gu you can trade Nas 100 yeah there are some of my students who who trade Nas you can trade that you can trade crypto whatever okay but I I personally I of gold reason is because gold's price action is very clean once you understand gold yeah gold will be
+
+00:38:04 - 00:39:04
+your best friend because you can read read this very clearly okay you can read the gold market very clearly if you understand these concept of story lines decision points and all of that okay and trend lines of course so if you understand that those Concepts go trust me after you master this stuff you're only going to trade gold I can guarantee you that okay and you will fall in love with go okay because EU and gu the the these ones do not move a lot right they do not move a lot okay but that doesn't
+
+00:38:35 - 00:39:46
+mean you can't trade you can't trade this you can trade this okay like for example where did the cells come from we had an open close right we had an open close here what you could do is refine it into the lower time frames what do we have here spr see always picking up a higher time frame level and then refining it into the lower time frame level steps M can you see now look at look at this one look at this one if you go to daily we had an open close where the where the market reacted to and then the
+
+00:39:09 - 00:40:20
+next day around this area this how we do refinements around that same daily area we had this what is this head and shoulder or it's left shoulder as if you go to H1 what can you do if you go to H1 you have another open close in here so from these areas this will be your buy Zone because if you if you talk about story lines you will understand this okay we will talk about story lines so yeah daily rejects a daily support and then one time frame low that is H4 H4 gives you a bullish breakout so we have that very clearly
+
+00:39:46 - 00:40:33
+and then once again we're starting from the high time frame itself to start like to pick up our zone so we have this same daily Zone because we do not have anything else on the day right we have another one that is here but we're not expecting the market to drop through there we will go through to them don't worry and then around that area we refine into lower time frames like this right we refine into lower time frames and then what happens boom there it goes can you see so where where did the
+
+00:40:09 - 00:41:10
+moves come from where did all these moves come from from the higher time frames right from the higher time frame levels itself like look at this there's a nice re-entry in here what is this a resistance being broken right a resistance being broken then it turns into what a support right once the resistance is broken we know that it turns into a support but now how do we know that we could trust this level right that's the problem how do we know that we could trust this level so that is the reason why we use Confluence
+
+00:40:41 - 00:41:54
+right that is the reason why we use a Confluence so our Confluence will be a trend line look at this uh where's this there we we have a break and retest trend line we call this a break and retest trend line see had a trend line like this which pushed price down here and now it is broken so now look at this the next candle if the next candle wants to get into this RBS we have the trend line and the uh key level overlapping very nicely so what happens there it goes see that re-entries okay you will
+
+00:41:17 - 00:42:07
+have some good re-entries you will have some now we will talk about everything don't worry okay this is just a basic session because we have entries we have high risk setups we have low risk setups we have medium risk setups okay so you need to understand how much you're going to risk for high risk setups how much you're going to risk for low risk setups and how much you're going to RIS for medium reset UPS we will go through all of that there's so much more to cover this is just the basics but you know
+
+00:41:42 - 00:42:30
+this right Basics are the foundation to anything okay so if your Basics are strong yeah you don't have to worry about any advanced stuff because the advanced stuff is using all the basic stuff okay so if you do not understand the basics well there is no point of going into the advanced stuff so please make sure you practice this okay don't just watch the session once again once I send you the recording and think okay I know this no you don't okay it'll take some time for you to understand this
+
+00:42:06 - 00:42:59
+okay even with the basics you will have questions now when I show it to you it looks very easy right looks very very easy but um I'm showing stuff in hindsight so to show stuff in hindsight is anyway it's very easy okay anyone can do that but once we start with the Advan and all of that at the start of the week I'll show you what I'm expecting okay what I'm expecting for the week at the start of a month I'll show you what I'm expecting for the month and at the start of a day I'll show you uh yeah what I'm
+
+00:42:33 - 00:43:29
+expecting for the day and all that stuff okay so you will you will get that but please make sure you understand the basics okay because I'm not a signal provider or whatever okay do not wait for me to tell you okay do this and do that okay take entri here close it here no I'm not going to do that I'm not going to spoon feed anyone okay so you need to do the hard work practice okay I will always help out okay I'll show you the zones that I'm interested and all that stuff as well but please do not
+
+00:43:00 - 00:44:03
+100% rely on that make sure you do your own analysis as well okay so go what if I die right you can't you can could happen right it could happen to any of us you can't rely on my signals or setups right away so please make sure you do the practicing as well you do your own practice as well okay yeah let's just look into some zones you you can see this right look at look at the Precision okay from open close levels and all this resist distance I don't think the market tapped um look at
+
+00:43:32 - 00:44:47
+this all of these are made on these levels look at this where was this made can you see so I just want to show you that it works okay it works doesn't matter if it's gu EU C whatever it it works see look at this look at this can you see that so all you have to do is once again like I told you practice okay all it takes is practice and after some time yeah you can call out the high of the week the high of the day high of the week month whatever okay whatever so brother I have a question over here can I annotate um
+
+00:44:08 - 00:45:23
+and show you where which line yeah um you on y so I think you drew a line around here okay yeah I didn't get the cell like the resistance that it made those are advanced stuff okay I'll show you yeah this one this one here okay this one this one yeah so this these types of zones are very strong okay this some advanced stuff we will go deeply into this because why can you see that this level was once used as a support mhm okay so after those levels are broken it pretty much gets used as a resistance at
+
+00:44:47 - 00:45:41
+least once okay before falling so that is why we use that level because most people when the market is here oh sorry when the market is here they will will ignore this Zone okay they'll ignore this Zone they will right away focus on this open close and then this resistance but we need to understand that below that we have a strong Zone as well so you need to pay attention to that too okay so that is why we marked out those L now we will we will go into this these are advanced stuff okay these
+
+00:45:14 - 00:46:06
+are some advanced stuff but we will go into that okay we will go into that don't worry I'll show you how to filter out those unnecessary levels and all of that okay but you see this right it works on EU it works on gu it works on gold whatever you want to trade you can trade with this okay very simple and it's very strong once you understand story lines you will see that you're never lost with the direction okay you you're not lost with the direction that's the main thing okay look at this
+
+00:45:40 - 00:46:52
+see reacting from weekly levels you could maybe do some refinements into lower time frames right let's see what we had on the lower time frames around this weekly zones um we have one zone here I think that is too far away yeah came almost into there but I'll show you okay so you see this right it works anywhere it works anywhere all you have to do is practice okay practice is what it takes like even on the monthly even from the monthly time frame you can see the pre look at this let's see um yeah look at this
+
+00:46:16 - 00:47:23
+where did this sell come from monthly open close see look at this this candle in here this bearish candle broke through this so first of all this was a support now it is broken so we could expect it to act as a resistance right so what happened the next month yeah you can you can do refinements if you want to maybe this level into this level I don't think it went into the refine Zone but yeah let's check there it goes like instantly can you see that when it Taps into high time frame zones this reaction you get like
+
+00:46:51 - 00:47:49
+instantly you're up like what's that see 430 Pips like what more do you need right this is in one day one single day most people have a 100 pip Target for their whole week but if you trade gold 100 Pips is nothing you can get it in one or two hours that's the thing okay and look at this now I'll show you something don't get yourself confused with this I'm only showing you the power of these open close levels and all of that okay so of the closing prices uh we're not going to even go into the left
+
+00:47:21 - 00:48:32
+this much okay we will not do that I I'll show you an example of the closing price how strong the closing prices are but don't think of it deeply one second okay look at this where was the high of this candle made right here okay where was the high of this candle made right here closing prices can you see that closing prices where was the high of this candle made closing price where was the high of this candle made closing price okay where was the high of this candle made closing price can you see look at this where was
+
+00:47:56 - 00:49:17
+the high of this candle made closing price okay so now we're not going to rely on this though I'm just showing you how strong this monthly closing prices are can you see that look at the look at the entries if you paid attention to them see this look at this okay look at this look at this look at this see that once that level is broken it is being used as a support we have all of that okay so wait very very strong okay these monthly levels are very strong like look at this even this you have to have sharp wise for
+
+00:48:36 - 00:49:46
+this okay how did this close right above the monthly open close broken right first of all this was a resistance now it is broken so which means it is not like not anymore a resistance but it is a support right it is a support then what you could do is maybe refine into lower time frames if you want to right just do something like that and then look at the reaction from that not yet oh there it goes can you see who who stopped this huge push who put who stopped it who put an end to it the monthly level if you go
+
+00:49:12 - 00:50:13
+to monthly where was the low of the month created where was the low of the month created right there see that so it's it's very important it is very important now I told you something like this right now can you see this level in here what is this level this is a closing price once again being broken but this is a very good Zone because why this Zone was once used as a resistance can you see how this Zone pushed price down here now it is broken so it could act as a support right it could act as a support so let's
+
+00:49:42 - 00:50:55
+see oh I have to play 30 candles I think let's see I know there it comes can you see that why I tell you these types of zones are good zones because once it was used as a resistance it's broken then it got used as a support low of the month in case bro what do we can you go back to the monthly time frame um what do we do about uh these price action these types of price action like over here like what do you mean what do we do here like uh the price action is not clear like it didn't make an open close
+
+00:50:20 - 00:51:25
+it just you know did this look at this yeah what is this a buy and a sell candle so what is this sir resistant oh a buy and a sell oh what confused me was the broke broker issues brok issues don't get confused with that okay yeah this type of happens with these Brokers I don't know why okay so don't get confused with that okay so always remember that if there's a bullish and a bearish candle that's a resistance and you need to pay attention to that then what you could do is refine this into
+
+00:50:52 - 00:51:46
+lower time frames maybe let's go to the Daily yeah on the daily what do we have we had this monthly level here on the daily we had open close levels see that monthly inside of this monthly just just think of it like this whole thing was your monthly resistance so inside of this monthly resistance what did we have we had these levels I don't know if this played out or not if you go to H4 let's see if we could do more refinements now we had a dropping Point here on the H4 okay we'll talk about that later we have
+
+00:51:19 - 00:52:19
+some liquidity resting below those zones let's see how the market reacted ah yeah there it goes see that so it's clear it's clear if you stick to the high time frames okay so it is not un it's always clear if you stick to the high time frame now this of course would have stopped us out I think yeah let's see if we could do more refinements of this yeah we had one more H1 resistance here that is where I tapped into see so we we will go through all of that don't worry okay we will go through all
+
+00:51:49 - 00:53:01
+of it that is not a problem all you have to do is just pra please practice the basics master the basics because as soon as you open the charts you need to be able to see the stuff okay open close resistance support spr RBS all that stuff you need to you need to be able to see it as soon as you open the charts that's the thing okay so yeah that is pretty much it for today okay we will have another session very soon yeah identify I like to learn with some kind of sorry I can't hear you clearly I I always get things easier
+
+00:52:25 - 00:53:24
+when I know that this is is the I'm follow you identify the levels with Precision especially at the monthly when you were doing it but we will go through all of that don't worry okay we will go through all of that just right now your only job is to identify what I told you as V how supports break and then turn into resistance how resistance break and then turn into support okay because now I can cover everything in one session in like a five hour session not a problem that's easy for me as well but what's the point
+
+00:52:55 - 00:53:48
+if if people don't understand right that's the thing okay that is why we go one by one do not think now do not think of advanced stuff right away okay just this is the basics this are this is the basics very simply so focus on this only a andv that's your only job maybe you know this maybe you don't some of them are brand new to these Concepts that because I have to be fair right just because like some of you know these stuff I can't directly go into the advanced stuff okay no we'll have to
+
+00:53:21 - 00:54:26
+start from the basics so bear with me after a week or two we will get into the advanced stuff okay so right now all you have to do is just see how a worked out see how V worked out see how support's broken and it turned into resistance how resistance breaks turns into support and just pay attention to that stuff only nothing more okay nothing more than that also to make it more simpler for us is you are very good already with seeing the levels at the Candlestick chart yeah you can be using the line chart for so
+
+00:53:53 - 00:55:12
+that we get used to that then we can at transition today yeah okay so uh just what you could do is right now until you practice this just use that moving average thing put the line chart on the Candlestick itself so that way you will know as soon as you see the Candlestick itself you will know if there is a closing price or not okay so like very simple if you put it here let me just do it moving aage uh if you set it to one okay until you practice just do it like this okay use this thing until you practice this so
+
+00:54:35 - 00:55:35
+like after after some time once you even without this okay you will know that okay on the line chart these are these are spikes right even these are little spikes so you know that see that okay and even these areas you know that this was a v so without without the indicators so without the line chart you will see that okay you will see that okay there is a support it was broken it turned it resistant all that stuff okay so now there are more stuff that you need to think about deeply so these aren't even that okay this is just the
+
+00:55:05 - 00:56:02
+basic so don't even think this is hard don't think okay there are two minut looking don't even think of any of that because if you make it complicated at the beginning itself yeah it'll be very hard for you to get over it okay so don't even think of it just very simple all you have to do is just follow what I say okay just see how a and we played out see how support breaks turns into resistance and open closes and all of that nothing else nothing else nothing more nothing else
+
+00:55:34 - 00:56:29
+okay try to keep it as simple as well because even when I started with SNR I had the same questions like you guys okay and then after some time I realized that all my questions were completely unnecessary okay because these are the basics these are the basics stick to this because this will be a very simple approach okay so to do the analysis here with this like once you complete once we complete the advanced stuff and all that to do an analysis for the day it takes only 30 seconds okay that is how good it
+
+00:56:02 - 00:57:02
+is that is how simple it is it takes 30 seconds to one minute maximum okay so please make sure you like follow what I say don't do anything more than that okay if you do anything more than that if you get yourself confused that is honestly not my problem right you're getting confused with something that I haven't even talked okay so do not do that do not do that just stick to what I say that's it okay I'm only responsible for what I teach I don't know if anyone else is teaching SNR if you've been exposed to
+
+00:56:31 - 00:57:31
+SNR so uh just completely forget that now here you're here with me I'll give you I'll even give you my trading plan what I look for and all of that stuff but before that stick to this don't look at anything else that is what I can tell you okay so yeah guys then that's it for today yeah I have a question actually yeah yeah yeah um so how many times uh can a support of resistance be broken like and you still consider consider it um the higher time frames levels like the monthly weekly and daily they can be
+
+00:57:01 - 00:58:06
+used so many times actually okay they can be used so many times but then again it'll be confused like normally now there is a concept called Fresh and not fresh okay so according to that once the market uses a resistance let's say this resistance is used okay let's say the market is coming back into that area okay so we don't like normally the chances of this holding is very less likely okay so once again if you're trying to look for a sell in here the chances of this happening is very very
+
+00:57:34 - 00:58:35
+less likely okay so we call this a used level we call this not this is an unfresh level okay but then again there's a there's something called decision points okay there's something called concept called decision points but when it comes to decision points you can use them like as much many times as you want okay so that's the thing I will show you decision points it is a very hard thing actually that's a little hard to understand that consider decision points but I will show you that later
+
+00:58:05 - 00:59:03
+once it comes into that you will see when we're going to use fresh levels and when we're going to use unfresh levels you you will understand that okay but as of now just stick to this stick to this I will show you all that later okay right thanks so okay nice so anything else anything else this anyone else have any questions that yeah actually last question um so how many sessions do we have in like what's the curriculum like that of course we will we will decide the times when everyone is available and
+
+00:58:33 - 00:59:28
+all of that okay so uh yeah we we have the chat here we have the group in Discord here we will we will discuss okay when everyone is free that is when we're doing session okay we don't want to like even if there if people are not there we will have to do the sessions because I will have to do at least one or two sessions every week so we will be doing that anyway okay one or two sessions every week we will be doing that uh please try to attend the sessions okay because I will send the recording as well but then again like
+
+00:59:01 - 00:59:43
+while while look like in in live like when we're doing a session like this it's better to always ask your questions and then get them cleared because when when you're watching the recording like you're not into it right maybe you're doing something else and you're watching the recording and out that so you will lose focus but if you're doing it live you need to listen to what I say right so you'll have good questions so please try to attend sessions and we will have
+
+00:59:22 - 01:00:27
+one to two sessions every week okay but the times will differ times will differ just to see if everyone is available and according to my schedule and all of that it will differ so I can't tell you right away okay we're only going to have sessions on Wednesdays Mondays Tu okay so we will have sessions whenever we can have one okay like that um yeah anything else I need to go through let me know no yeah some people are completely quiet hopefully you guys understood everything okay so that's okay if if you want to it
+
+00:59:55 - 01:00:50
+clear okay nice it was clear just have to practice now yes please do the do please practice okay so what I want you guys to do is everyone if you are okay with this and we so support and no problem just skip this but what I want everyone to do is for the ones that are new to this go to the charts okay go to the charts and then see just send some examples of how a like how supports played out how resistance is played out how open close levels played out and all of that okay so at least 50 examples
+
+01:00:22 - 01:01:28
+from each okay so a resistance a support open close RBS we are all that so that way I know you understood the concept very clearly okay so please do it that way I'll correct them send your charts in the group okay I'll always look into that okay yeah anything else let me know um uh brother how big of a role does liquidity inducements play into this no inducements okay no forget that word remove it from your diction R okay we don't focus on inducements liquidity of course we will go through liquidity a
+
+01:00:55 - 01:01:57
+little bit okay so when dealing with SMC we will only deal with we will only deal with liquidity here because if you are trading EU EU gu like if you're trading Forex pairs you need to add a little bit of SMC into it so by SMC I mean not ranges and all that stuff all we focus on is session liquidity previous day high previous day low previous week high previous week low and previous month High previous M that is the only type of liquidity that we will focus on that's the only type of SMC invol so this
+
+01:01:25 - 01:02:36
+trading Style is around 95% SNR 5% SMC that is liquidity only okay so not that important that's not very important but um I'm not saying is not important we yeah we we will I will show you that okay once we go into the back testing sessions you will understand how we use it okay okay yeah yeah I have a question also actually um so how uh likely is or rather um because like for example SMC was really popular like uh maybe last few years right and then that's when you started to see like SMC Traders start to
+
+01:02:02 - 01:03:11
+like get trapped all the time right so like what the chances that this um SNR is just like now the thing is the thing about SMC is now people have different versions of SMC right like it's not the same thing that everyone talks about when it comes to SMC okay so this of course now remember now if you guys know dear the gold eager okay I have a screen shot as well that is where I studied from a lot okay I did have a mentor who was good for nothing so not no offense but here okay so he what he did was now I'll tell you he
+
+01:02:36 - 01:03:37
+just opened the like we had I had some notes from the founders he sent it to me this is like one I think almost like two years back I think I don't even remember no I don't think that's two years one and a half years maybe so what he did was he opened some notes on his iPad and then on the notes he had story line like that was just notes and then what he did was he read it out to me and that's it okay so I paid him for that so after that of course it was my hard work so that is how I figured it out like
+
+01:03:07 - 01:04:16
+practicing drra screenshot studying the notes again and again and again so that is how I got good at so now uh now dearra she she was uh trading I think this was the price section when she left somewhere here this is 2019 okay from 2019 and this 2023 is four years now we're talking four years ago and right now even after four years it works perfectly fine okay and you you've seen my entries right like you have you can get the high of the weeks high of the month high of the day all all of that stuff is tradeable so I
+
+01:03:41 - 01:04:44
+don't think like this is like SMC this is very strong this is a very very strong approach okay don't you can't even compare this to SMC to be honest okay so this will this thing will work completely fine do not have any doubt about it this will work perfectly fine like I can guarantee you that 100% okay yeah cool okay nice what else what else anyone else with questions no I just wanted to say thank you very much I'm I'm listening at at work and I'm gonna go back and watch everything
+
+01:04:13 - 01:05:06
+send those charts so I really really appreciate it okay awesome bro nice nice okay guys then that's it for today uh hope you guys have a good weekend and I'll talk to you guys in the next session please send the chat so if you are if you guys are doing any mistakes I can correct that doesn't matter if you are Advanced Home like whatever you are just send the charts that way I know you guys are understanding it properly okay so I'll check it out I'll check that out and I'll let you know the times for the
+
+01:04:39 - 01:05:15
+next session uh maybe tomorrow or Monday okay we can have an we can have our next session on uh today's the 3D maybe Tuesday yeah maybe Tuesday we can have another session we will do that okay but before the session I want everyone to practice okay I want everyone to practice so yeah and also

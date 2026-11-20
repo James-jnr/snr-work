@@ -1,0 +1,182 @@
+📊 EURUSD feed online: snapshot
+2026-11-20 09:42:31 UTC  (alert #35)
+
+EURUSD   price 1.09664   Fri 20 Nov 12:00 EAT
+══════════════════════════════════════════════════════
+FEED ONLINE SNAPSHOT: the current picture from MT5.
+
+STORY LINES
+──────────────────────────────────────────────────────
+MONTHLY – BULLISH since 23 Aug   [UNVERIFIED: tick it on the alert page]
+  Monthly rejected the Monthly support (Classic A/V) at 1.14136 with a wick
+  and closed above it, and Weekly gave a bullish breakout (QM) at 1.16606 in
+  the following candle.
+  Renewed Monthly bullish story line (since 01 Jun): same direction.
+
+WEEKLY – BEARISH since 20 Sep   [UNVERIFIED: tick it on the alert page]
+  Weekly rejected the Weekly resistance (QM) at 1.15985 with a wick and
+  closed below it, and Daily gave a bearish breakout (QM) at 1.15885 in the
+  same candle.
+  Context: retracement of the Monthly story line (bullish). Trades from this
+  story line are retracement trades: targets stop at the parent's entry
+  zone.
+  Renewed Weekly bearish story line (since 15 Sep): same direction.
+
+DAILY – BEARISH since 06 Nov   [UNVERIFIED: tick it on the alert page]
+  Daily rejected the Daily resistance (OCL) at 1.12322 with a wick and
+  closed below it, and 4-hour gave a bearish breakout (QM) at 1.12287 in the
+  same candle.
+  Context: with the Daily bearish story line, but the Monthly story line
+  (bullish) is against it higher up.
+  Renewed Daily bearish story line (since 05 Nov): same direction.
+
+4-HOUR – BEARISH since 18 Nov   [UNVERIFIED: tick it on the alert page]
+  4-hour rejected the 4-hour resistance (Classic A/V) at 1.09822 with a wick
+  and closed below it, and 1-hour gave a bearish breakout (QM) at 1.09657 in
+  the following candle.
+  Context: with the 4-hour bearish story line, but the Monthly story line
+  (bullish) is against it higher up.
+  Renewed 4-hour bearish story line (since 13 Nov): same direction.
+
+WHERE WE ARE NOW
+  Monthly is still bullish. It hit a Monthly resistance (OCL) at 1.16606 and
+  closed below it, but there is no Weekly breakout, so it remains bullish.
+  Weekly remains bearish: price is moving with the story line.
+  Daily remains bearish: price is moving with the story line.
+  4-hour is still bearish. It hit a 4-hour support (Classic A/V) at 1.09655
+  (a Daily story-line obstacle) and closed above it, but there is no 1-hour
+  breakout, so it remains bearish.
+  Monthly is bullish, but Weekly and Daily are bearish, so the lower
+  timeframes are pulling back against the Monthly move: expect consolidation
+  and prefer the higher timeframe.
+
+KEY LEVELS (only the relevant, recent ones)
+──────────────────────────────────────────────────────
+Monthly story line (bullish) uses Weekly levels:
+  Obstacle  Weekly resistance (Classic A/V)      1.12020   strength 80/100
+
+Weekly story line (bearish) uses Daily levels:
+  Key level Daily resistance (OCL)               1.11516   strength 91/100
+            STRONG zone: overlaps Weekly resistance (OCL) 1.11597
+  Key level Daily resistance (OCL)               1.11867   strength 82/100   (newest)
+
+Daily story line (bearish) uses 4-hour and 1-hour levels:
+  Key level 1-hour resistance (Classic A/V)      1.09667   strength 67/100
+  Key level 1-hour resistance (QM)               1.09723   strength 71/100   (newest)
+  Key level 4-hour resistance (Classic A/V)      1.09822   strength 74/100   (newest)
+  Key level 4-hour resistance (Classic A/V)      1.09934   strength 73/100
+  Obstacle  1-hour support (Classic A/V)         1.09574   strength 21/100
+
+4-hour story line (bearish) uses 1-hour levels:
+  Key level 1-hour resistance (Classic A/V)      1.09667   strength 67/100
+  Key level 1-hour resistance (QM)               1.09723   strength 71/100   (newest)
+  Obstacle  1-hour support (Classic A/V)         1.09574   strength 21/100
+
+STRONG ZONES (timeframes overlapping):
+  1.11516 – 1.11597   resistance   Weekly + Daily
+
+LIQUIDITY
+Previous day   high 1.10098   low 1.09554
+Previous week  high 1.12514   low 1.10197
+Asian range    high 1.09813   low 1.09612   (first two 4-hour candles)
+
+THESIS (the plan for this pair)
+──────────────────────────────────────────────────────
+  Dominant trend: Monthly bullish. Anchor: the Daily story line is bearish,
+  with the Daily bearish story line, but the Monthly story line (bullish) is
+  against it higher up. Continuation SELL at 1.09723 (triggered).
+
+  Changed since the previous thesis:
+    - Continuation zone moved from 1.09896 to 1.09723.
+    - Continuation scenario is now 'triggered' (was 'zone reached').
+    - Reversal scenario is now 'waiting' (was 'zone reached').
+
+IF PRICE GOES THERE: TWO SCENARIOS
+──────────────────────────────────────────────────────
+  Instead of predicting, wait for the trigger. If price goes to either
+  point, this is what we would look for. [x] = met now, [ ] = not yet, [~] =
+  timing note.
+
+SCENARIO A · SELL · Continuation: with the Daily story line (bearish)
+  Context      : with the Daily bearish story line, but the Monthly story
+                 line (bullish) is against it higher up
+  Where        : 1.09822  4-hour resistance (Classic A/V)   (6 pips above price)
+  Refine to    : 1.09723  1-hour resistance (QM)
+  Look for     :
+    [x] Price reaches 4-hour resistance (Classic A/V) at 1.09723
+    [x] 4-hour rejects a 4-hour level in that zone (a wick into it, then a
+        close back below it)
+    [x] 1-hour then breaks structure (QM) or an open-close level (OCL) down
+    [x] Outside Asia (the first two 4-hour candles)
+    [~] Inside the London or New York kill zone (best timing)
+    [x] Daily trade limit not reached
+  Cancel if    : a 1-hour candle closes above 1.09843
+  Targets      :
+    T1  1.09612  Asian low  (~11 pips)
+          liquidity: expected to be swept because of the story line
+    T2  1.09554  Previous day low  (~17 pips)
+          liquidity: expected to be swept because of the story line
+  Status       : TRIGGERED: every condition is met. Treat it as a live setup.
+
+SCENARIO B · BUY · Reversal / retracement: against the Daily story line (bearish)
+  Waiting: no suitable key level / obstacle near price yet
+
+⏰ London and New York kill zones are the best entry times.
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+SETUPS
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+SETUP 1 · SELL · Daily story line: 4-hour entry, refine to 1-hour
+  Aligned with : Weekly bearish ✔  |  Daily bearish ✔  |  Monthly bullish ✘  |  4-hour bearish ✔
+  Context      : with the Daily bearish story line, but the Monthly story
+                 line (bullish) is against it higher up
+  Entry zone   : 1.09723  1-hour resistance (QM)  (newest)
+  Invalid if   : a 1-hour candle closes above 1.09843
+  Enter by     : Sat 21 Nov 01:00 EAT
+  Stays valid  : until the Daily candle closes, then re-check. It agrees
+                 with the Daily story line, but the Monthly story line is
+                 against it higher up: take profit at the ceiling and do not
+                 expect more than the Monthly story line's entry zone
+  Targets:
+    T1  1.09612  Asian low  (~11 pips)
+          liquidity: expected to be swept because of the story line
+    T2  1.09554  Previous day low  (~17 pips)
+          liquidity: expected to be swept because of the story line
+
+SETUP 2 · SELL · 4-hour story line: 1-hour entry
+  Late: the entry window has passed: wait for the next pullback or rejection
+  Aligned with : Weekly bearish ✔  |  Daily bearish ✔  |  Monthly bullish ✘  |  4-hour bearish ✔
+  Context      : with the Daily bearish story line, but the Monthly story
+                 line (bullish) is against it higher up
+  Entry zone   : 1.09723  1-hour resistance (QM)  (newest)
+  Invalid if   : a 1-hour candle closes above 1.09843
+  Enter by     : Thu 19 Nov 05:00 EAT
+  Stays valid  : until the 4-hour candle closes, then re-check. It agrees
+                 with the Daily story line, but the Monthly story line is
+                 against it higher up: take profit at the ceiling and do not
+                 expect more than the Monthly story line's entry zone
+  Targets:
+    T1  1.09612  Asian low  (~11 pips)
+          liquidity: expected to be swept because of the story line
+    T2  1.09574  1-hour support (Classic A/V)  (~15 pips)
+          roadblock: pay yourself here or move to break-even
+
+SETUP 3 · SELL · Confirmation entry: 4-hour rejection, then 1-hour break
+  4-hour rejected the 4-hour resistance at 1.09822 and 1-hour gave an open-
+  close level (OCL) break at 1.09674.
+  Aligned with : Weekly bearish ✔  |  Daily bearish ✔  |  Monthly bullish ✘  |  4-hour bearish ✔
+  Context      : with the Daily bearish story line, but the Monthly story
+                 line (bullish) is against it higher up
+  Entry zone   : 1.09723  1-hour resistance (QM)  (newest)
+  Invalid if   : a 1-hour candle closes above 1.09843
+  Enter by     : Fri 20 Nov 13:00 EAT
+  Stays valid  : until the 4-hour candle closes, then re-check. It agrees
+                 with the Daily story line, but the Monthly story line is
+                 against it higher up: take profit at the ceiling and do not
+                 expect more than the Monthly story line's entry zone
+  Targets:
+    T1  1.09612  Asian low  (~11 pips)
+          liquidity: expected to be swept because of the story line
+    T2  1.09574  1-hour support (Classic A/V)  (~15 pips)
+          roadblock: pay yourself here or move to break-even

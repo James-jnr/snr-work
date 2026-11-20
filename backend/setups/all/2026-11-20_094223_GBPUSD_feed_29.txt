@@ -1,0 +1,4 @@
+✅ GBPUSD: MT5 feed restored
+2026-11-20 09:42:23 UTC  (alert #29)
+
+Data is flowing again.

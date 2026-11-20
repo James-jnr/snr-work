@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNR Charts</title>
+<link rel="stylesheet" href="/static/ui.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main>
+  <div class="bar">
+    <select id="symbol"></select>
+    <div class="tabs" id="tabs"></div>
+    <label class="small">Candles <select id="bars"><option value="0">default</option><option>40</option><option>80</option><option>120</option><option>200</option></select></label>
+    <label class="small">Style <select id="style"><option value="line">Line of closes (course)</option><option value="candles">Candles</option></select></label>
+    <label class="small">Levels <select id="levels"><option value="key">Key levels + obstacles</option><option value="all">All recent levels</option></select></label>
+    <label class="small"><input type="checkbox" id="auto" checked> auto-refresh</label>
+    <span class="small" id="status"></span>
+  </div>
+  <div class="card"><div id="stories"></div></div>
+  <div class="card" style="margin-top:12px"><img id="img" class="chartimg" alt="chart" style="display:none"><div class="empty" id="msg" style="display:none"></div></div>
+  <div class="small" style="margin:8px 2px">Click the chart to enlarge it. Each tab shows <b>one timeframe alone</b>: only the key levels and obstacles the engine selected for it (most relevant, most recent, strongest). The zone map puts the key levels of every timeframe on one chart; shaded bands are strong zones where timeframes overlap.</div>
+  <div class="card" id="lvcard"><h2 id="lvtitle">Levels on this timeframe</h2>
+    <div class="tablewrap"><table class="lv"><thead><tr><th>Level</th><th>Role in the story line</th><th>Price</th><th>Strength</th><th>Pips from price</th><th>Touched</th><th>Role changes</th><th>Strong zone</th><th>Formed</th></tr></thead><tbody id="rows"></tbody></table></div>
+  </div>
+</main>
+<script src="/static/ui.js"></script>
+<script>
+"use strict";
+const {$, el, api, withKey} = SNR;
+SNR.header("charts");
+const TFS = [["ZM", "Zone map"], ["MN1", "Monthly"], ["W1", "Weekly"], ["D1", "Daily"], ["H4", "4-hour"], ["H1", "1-hour"]];
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+let tf = "ZM", meta = {}, blobUrl = "";
+
+function tabs() { $("#tabs").replaceChildren(...TFS.map(([k, n]) => el("button", {class: k === tf ? "on" : "", onclick: () => { tf = k; tabs(); load(); }}, n))); }
+async function loadMeta() {
+  meta = await api("/api/chart-meta");
+  const sel = $("#symbol"), cur = sel.value, syms = Object.keys(meta);
+  if (sel.options.length !== syms.length) { sel.replaceChildren(...syms.map(s => el("option", {value: s}, s))); if (syms.includes(cur)) sel.value = cur; }
+}
+function stories() {
+  const m = meta[$("#symbol").value], box = $("#stories");
+  if (!m || !m.ready) { box.replaceChildren(el("span", {class: "small"}, "Waiting for enough MT5 data…")); return; }
+  const NM = {MN1: "Monthly", W1: "Weekly", D1: "Daily", H4: "4-hour"};
+  box.replaceChildren(el("span", {class: "chip"}, `price ${m.price.toFixed(m.digits)} · ${m.updated}`),
+    ...Object.entries(m.stories).map(([k, s]) => !s ? el("span", {class: "chip"}, NM[k] + ": no story line")
+      : el("span", {class: "chip " + (s.dir === "bear" ? "sell" : "buy")}, `${NM[k]} ${s.dir === "bear" ? "bearish" : "bullish"} since ${s.since} · rejected ${s.level.toFixed(m.digits)}`)));
+}
+async function load() {
+  const sym = $("#symbol").value; if (!sym) return;
+  const q = new URLSearchParams({symbol: sym, tf, bars: $("#bars").value, style: $("#style").value, theme: dark ? "dark" : "light", all_levels: $("#levels").value === "all", t: Date.now()});
+  const img = $("#img"), msg = $("#msg");
+  try {
+    const r = await fetch(withKey("/api/chart.png?" + q));
+    if (r.status === 401 || r.status === 503) { await api("/api/status"); return; }
+    if (!r.ok) { let t = r.status; try { t = (await r.json()).detail; } catch (e) {} img.style.display = "none"; msg.style.display = "block"; msg.textContent = t; $("#rows").replaceChildren(); return; }
+    const old = blobUrl; blobUrl = URL.createObjectURL(await r.blob()); img.src = blobUrl; if (old) URL.revokeObjectURL(old);
+    img.style.display = "block"; msg.style.display = "none";
+    img.onclick = () => SNR.lightbox([{src: blobUrl, caption: `${sym} · ${TFS.find(t => t[0] === tf)[1]}`}], 0);
+    if (tf === "ZM") { $("#lvcard").style.display = "none"; } else {
+      $("#lvcard").style.display = "block";
+      const d = await api("/api/levels?" + new URLSearchParams({symbol: sym, tf, limit: 60}));
+      $("#lvtitle").textContent = `Levels on the ${TFS.find(t => t[0] === tf)[1]} timeframe (${d.total_active} active, most relevant first)`;
+      const CLS = {"key level": "Key level", "obstacle": "Obstacle", "context": "Level", "other": "Other recent level"};
+      $("#rows").replaceChildren(...d.levels.map(l => { const tr = el("tr", {class: l.cls === "key level" ? "key" : ""},
+        ...[l.name, CLS[l.cls], l.price.toFixed(d.digits), l.strength + "/100", (l.pips > 0 ? "+" : "") + l.pips, l.touches, l.flips, l.strong ? "STRONG: " + l.overlap : "", l.formed].map(v => el("td", {}, v))); return tr; }));
+    }
+    $("#status").textContent = "updated " + new Date().toLocaleTimeString();
+  } catch (e) { if (e.message !== "auth") $("#status").textContent = "backend not reachable"; }
+}
+async function init() { try { await loadMeta(); } catch (e) { return; } tabs(); stories(); load(); }
+$("#symbol").onchange = () => { stories(); load(); };
+["bars", "style", "levels"].forEach(id => $("#" + id).onchange = load);
+window.addEventListener("snr-synced", async () => { await loadMeta(); stories(); load(); });
+init();
+setInterval(async () => { if (document.hidden || !$("#auto").checked) return; try { await loadMeta(); stories(); } catch (e) {} load(); }, 30000);
+</script>
+</body>
+</html>

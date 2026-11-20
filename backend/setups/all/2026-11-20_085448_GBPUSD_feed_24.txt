@@ -1,0 +1,4 @@
+⚠️ GBPUSD: MT5 feed offline
+2026-11-20 08:54:48 UTC  (alert #24)
+
+No data from the MT5 bot for 10 min. Check that MT5 is open, connected, and the EA is running.

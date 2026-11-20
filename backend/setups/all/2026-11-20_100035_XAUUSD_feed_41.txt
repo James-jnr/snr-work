@@ -1,0 +1,4 @@
+✅ XAUUSD: MT5 feed restored
+2026-11-20 10:00:35 UTC  (alert #41)
+
+Data is flowing again.

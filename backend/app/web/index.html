@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNR Alerts</title>
+<link rel="stylesheet" href="/static/ui.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main>
+  <div class="bar">
+    <div class="tabs" id="tabs">
+      <button data-v="alerts" class="on">All alerts</button><button data-v="saved">Saved</button><button data-v="stats">Stats</button>
+    </div>
+    <select id="f-symbol"><option value="">All symbols</option></select>
+    <select id="f-kind">
+      <option value="">All types</option><option value="setup">Setups</option><option value="scenario">Scenarios (price reached a zone)</option><option value="storyline">Story lines</option>
+      <option value="brief">Briefings</option><option value="snapshot">Snapshots</option><option value="feed">Feed status</option>
+    </select>
+    <select id="f-dir"><option value="">Buy + sell</option><option value="buy">Buy only</option><option value="sell">Sell only</option></select>
+    <input type="search" id="f-q" placeholder="Search text and notes">
+    <span class="small" id="count"></span>
+  </div>
+  <div id="out"></div>
+</main>
+<script src="/static/ui.js"></script>
+<script>
+"use strict";
+const {$, el, api, fmtTime} = SNR;
+SNR.header("alerts");
+let view = "alerts", seen = null, lastSig = "";
+const KIND = {setup: "Setup", scenario: "Scenario", storyline: "Story line", brief: "Briefing", snapshot: "Snapshot", feed: "Feed", test: "Test", other: "Other"};
+
+function chips(a) {
+  const out = [];
+  if ((a.kind === "setup" || a.kind === "scenario") && a.direction) out.push(el("span", {class: "chip " + a.direction}, a.direction.toUpperCase() + (a.grade ? " · grade " + a.grade : "")));
+  if (a.kind === "storyline" && a.direction) out.push(el("span", {class: "chip " + a.direction}, a.direction === "buy" ? "Buy bias" : "Sell bias"));
+  for (const s of (a.meta && a.meta.stories) || []) out.push(el("span", {class: "chip " + (s.dir === "bull" ? "buy" : "sell")}, s.name + " " + (s.dir === "bull" ? "bullish" : "bearish")));
+  return out;
+}
+function row(a, fresh) {
+  const tr = el("tr", {class: "row" + (fresh ? " fresh" : ""), onclick: () => location.href = "/alert/" + a.id},
+    el("td", {}, el("button", {class: "star" + (a.saved ? " on" : ""), title: "Save", onclick: async (e) => {
+      e.stopPropagation(); const r = await api(`/api/alerts/${a.id}/save`, {method: "POST", body: {saved: !a.saved}}); a.saved = r.saved; e.target.classList.toggle("on", a.saved); e.target.textContent = a.saved ? "★" : "☆"; }}, a.saved ? "★" : "☆")),
+    el("td", {class: "small", style: "white-space:nowrap"}, fmtTime(a.created_at)),
+    el("td", {}, el("b", {}, a.symbol || "")),
+    el("td", {}, el("span", {class: "chip type"}, KIND[a.kind] || a.kind)),
+    el("td", {}, a.subject),
+    el("td", {}, ...chips(a)),
+    el("td", {class: "small", style: "white-space:nowrap"}, a.taken ? "✔ took it " : "", a.outcome || "",
+       (a.meta && a.meta.charts && a.meta.charts.length) ? "  🖼 " + a.meta.charts.length : ""));
+  return tr;
+}
+async function loadAlerts() {
+  const p = new URLSearchParams({limit: 300});
+  if (view === "saved") p.set("saved", "true");
+  for (const [id, k] of [["f-symbol", "symbol"], ["f-kind", "kind"], ["f-dir", "direction"], ["f-q", "q"]]) if ($("#" + id).value) p.set(k, $("#" + id).value);
+  const d = await api("/api/alerts?" + p);
+  const sel = $("#f-symbol"), cur = sel.value;
+  if (sel.options.length - 1 !== d.symbols.length) { sel.replaceChildren(el("option", {value: ""}, "All symbols"), ...d.symbols.map(s => el("option", {value: s}, s))); sel.value = cur; }
+  const sig = JSON.stringify(d.alerts.map(a => [a.id, a.saved, a.taken, a.outcome, (a.meta && a.meta.charts || []).length]));
+  $("#count").textContent = d.alerts.length + " shown";
+  if (sig === lastSig) return; lastSig = sig;
+  const ids = new Set(d.alerts.map(a => a.id));
+  if (!d.alerts.length) { $("#out").replaceChildren(el("div", {class: "empty"}, view === "saved" ? "Nothing saved yet. Click the star on an alert." : "No alerts yet. Waiting for MT5 data…")); seen = ids; return; }
+  const table = el("table", {class: "list"}, el("thead", {}, el("tr", {}, ...["", "Time", "Symbol", "Type", "What happened", "Direction / story lines", "Your result"].map(h => el("th", {}, h)))),
+    el("tbody", {}, ...d.alerts.map(a => row(a, seen && !seen.has(a.id)))));
+  seen = ids; $("#out").replaceChildren(table);
+}
+async function loadStats() {
+  const s = await api("/api/stats" + ($("#f-symbol").value ? "?symbol=" + encodeURIComponent($("#f-symbol").value) : ""));
+  const kinds = Object.entries(s.by_kind).map(([k, n]) => el("span", {class: "chip"}, (KIND[k] || k) + ": " + n));
+  const g = Object.entries(s.grades);
+  const t = el("table", {class: "lv"}, el("thead", {}, el("tr", {}, ...["Grade", "Setups", "Won", "Lost", "Break-even", "Skipped", "Unmarked", "Win rate"].map(h => el("th", {}, h)))),
+    el("tbody", {}, ...g.map(([k, v]) => el("tr", {}, el("td", {}, "Grade " + k), ...[v.total, v.won, v.lost, v.breakeven, v.skipped, v.unmarked].map(x => el("td", {}, x)), el("td", {}, v.win_rate === null ? "–" : v.win_rate + "%"))),
+      el("tr", {}, el("td", {}, el("b", {}, "All")), ...[s.overall.total, s.overall.won, s.overall.lost, s.overall.breakeven, s.overall.skipped, s.overall.unmarked].map(x => el("td", {}, el("b", {}, x))), el("td", {}, el("b", {}, s.overall.win_rate === null ? "–" : s.overall.win_rate + "%")))));
+  $("#out").replaceChildren(el("div", {class: "card"}, el("h2", {}, "Alerts by type"), el("div", {}, ...kinds)),
+    el("div", {class: "card", style: "margin-top:12px"}, el("h2", {}, "Results of setups you marked (by grade)"), el("div", {class: "tablewrap"}, t),
+      el("div", {class: "small", style: "margin-top:8px"}, "Mark each setup's result on its alert page to fill this in. Win rate counts won vs lost only.")));
+  $("#count").textContent = "";
+}
+async function load() { try { view === "stats" ? await loadStats() : await loadAlerts(); } catch (e) { if (e.message !== "auth") $("#out").replaceChildren(el("div", {class: "empty err"}, "Could not load: " + e.message)); } }
+$("#tabs").addEventListener("click", (e) => { if (!e.target.dataset.v) return; view = e.target.dataset.v; lastSig = ""; seen = null; document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b === e.target)); load(); });
+["f-symbol", "f-kind", "f-dir"].forEach(id => $("#" + id).addEventListener("change", () => { lastSig = ""; seen = null; load(); }));
+let t; $("#f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { lastSig = ""; seen = null; load(); }, 300); });
+window.addEventListener("snr-synced", () => { lastSig = ""; load(); });
+load(); setInterval(() => { if (!document.hidden) load(); }, 15000);
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNR Alert</title>
+<link rel="stylesheet" href="/static/ui.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main id="page"><div class="empty">loading…</div></main>
+<script src="/static/ui.js"></script>
+<script>
+"use strict";
+const {$, el, api, fmtTime, withKey} = SNR;
+SNR.header("alerts");
+const id = Number(location.pathname.split("/").pop());
+const TFN = {ZM: "Zone map", MN1: "Monthly", W1: "Weekly", D1: "Daily", H4: "4-hour", H1: "1-hour"};
+const KIND = {setup: "Setup", scenario: "Scenario", storyline: "Story line", brief: "Briefing", snapshot: "Snapshot", feed: "Feed", test: "Test", other: "Other"};
+let alertData = null, status = {}, retries = 0;
+
+function parse(text) {
+  const heads = [/^STORY LINES$/, /^WHERE WE ARE NOW$/, /^KEY LEVELS/, /^STRONG ZONES/, /^LIQUIDITY$/, /^THESIS/];
+  const secs = []; let cur = {title: "", lines: []}, mode = "rep";
+  const push = () => { while (cur.lines.length && !cur.lines[cur.lines.length - 1].trim()) cur.lines.pop(); if (cur.lines.length || (cur.blocks && cur.blocks.length) || cur.note) secs.push(cur); };
+  for (const L of text.split("\n")) {
+    if (/^▓+$/.test(L) || /^[═─]+$/.test(L)) continue;
+    if (L.startsWith("⏰")) { cur.note = L; continue; }
+    if (L === "SETUPS") { push(); cur = {title: "Setups", lines: [], blocks: [], re: /^SETUP \d/, scn: false}; mode = "blocks"; continue; }
+    if (/^IF PRICE GOES THERE/.test(L)) { push(); cur = {title: "If price goes there: two scenarios", lines: [], blocks: [], re: /^SCENARIO [AB]/, scn: true}; mode = "blocks"; continue; }
+    if (mode === "blocks") {
+      if (cur.re.test(L)) cur.blocks.push({head: L, lines: []});
+      else if (cur.blocks.length) cur.blocks[cur.blocks.length - 1].lines.push(L);
+      else cur.lines.push(L);
+      continue;
+    }
+    if (heads.some(r => r.test(L))) { push(); cur = {title: L.replace(/:$/, ""), lines: []}; continue; }
+    cur.lines.push(L);
+  }
+  push(); return secs;
+}
+const pre = (lines) => el("pre", {class: "rep"}, lines.join("\n").replace(/^\n+/, ""));
+
+function sectionNodes(a) {
+  const out = [];
+  for (const s of parse(a.body)) {
+    if (s.blocks) {
+      const wrap = el("div", {class: "stack"}, el("h2", {style: "margin:6px 0 0"}, s.title));
+      if (s.lines.length && s.lines.join("").trim()) wrap.append(el("div", {class: s.scn ? "small" : "card banner", style: s.scn ? "" : "border-radius:10px"}, s.lines.join(" ").trim()));
+      for (const su of s.blocks) {
+        const dir = /· SELL ·/.test(su.head) ? "sell" : /· BUY ·/.test(su.head) ? "buy" : "";
+        wrap.append(el("div", {class: "card setup " + dir + (s.scn ? " scn" : "")}, el("b", {}, su.head), pre(su.lines)));
+      }
+      if (s.note) wrap.append(el("div", {class: "small"}, s.note));
+      out.push(wrap); continue;
+    }
+    if (!s.title) { out.push(el("div", {class: "card"}, pre(s.lines))); continue; }
+    out.push(el("div", {class: "card", "data-sec": s.title}, el("h2", {}, s.title), pre(s.lines), s.note ? el("div", {class: "small", style: "margin-top:6px"}, s.note) : null));
+    if (s.title === "STORY LINES") out.push(verifyCard(a));
+  }
+  return out;
+}
+
+function verifyCard(a) {
+  const stories = (a.meta && a.meta.stories) || [];
+  if (!stories.length) return null;
+  const off = (a.meta && a.meta.gmt_offset) || 0;
+  const card = el("div", {class: "card verify"}, el("h2", {}, "Verify the story lines"),
+    el("div", {class: "small"}, "Tick a story line when you agree with it on your own chart. Reject it if you do not: a rejected story line is treated as ended and setups stop building on it."));
+  for (const s of stories) {
+    const key = `${a.symbol}|${s.tf}|${s.dir}|${s.eff}`, st = status[key] || "unverified";
+    const set = async (v) => { await api("/api/story-status", {method: "POST", body: {symbol: a.symbol, tf: s.tf, dir: s.dir, eff: s.eff, status: v}}); status[key] = v === "unverified" ? undefined : v; rerender(); };
+    card.append(el("div", {class: "vrow"},
+      el("label", {}, el("input", {type: "checkbox", checked: st === "verified", disabled: st === "rejected", onchange: (e) => set(e.target.checked ? "verified" : "unverified")}), "Verified"),
+      el("span", {class: "chip " + (s.dir === "bull" ? "buy" : "sell")}, s.name + (s.dir === "bull" ? " bullish" : " bearish")),
+      el("span", {class: "small"}, "since " + fmtTime(s.eff - off) + " · rejected " + s.level + " · breakout level " + s.qm_level),
+      el("span", {class: "spacer"}),
+      st === "rejected" ? el("span", {class: "chip sell"}, "Rejected: treated as ended") : null,
+      st === "rejected" ? el("button", {class: "btn ghost", onclick: () => set("unverified")}, "Undo")
+        : el("button", {class: "btn ghost", onclick: () => set("rejected")}, "Reject this story line"),
+      st === "verified" ? el("span", {class: "chip buy"}, "Verified by you") : st === "unverified" ? el("span", {class: "chip"}, "Unverified") : null));
+  }
+  return card;
+}
+
+function controlsCard(a) {
+  const isSetup = a.kind === "setup";
+  const taken = el("input", {type: "checkbox", checked: a.taken});
+  const outcome = el("select", {}, ...[["", "Outcome: not set"], ["won", "Won"], ["lost", "Lost"], ["breakeven", "Break-even"], ["skipped", "Skipped"]].map(([v, t]) => el("option", {value: v, selected: a.outcome === v}, t)));
+  const notes = el("textarea", {placeholder: "Your notes: why you took it, skipped it, what happened…"}, a.notes || "");
+  const msg = el("span", {class: "small"});
+  const save = el("button", {class: "btn", onclick: async () => {
+    try {
+      await api(`/api/alerts/${a.id}/notes`, {method: "POST", body: {notes: notes.value, outcome: outcome.value}});
+      if (isSetup) await api(`/api/alerts/${a.id}/taken`, {method: "POST", body: {taken: taken.checked}});
+      msg.textContent = "Saved ✓"; setTimeout(() => msg.textContent = "", 2000); SNR.$("#hdr") && 0;
+    } catch (e) { msg.textContent = "Could not save: " + e.message; }
+  }}, "Save");
+  const star = el("button", {class: "btn ghost", onclick: async () => { const r = await api(`/api/alerts/${a.id}/save`, {method: "POST", body: {saved: !a.saved}}); a.saved = r.saved; star.textContent = a.saved ? "★ Saved" : "☆ Save"; }}, a.saved ? "★ Saved" : "☆ Save");
+  return el("div", {class: "card notes"}, el("h2", {}, "Your log"),
+    el("div", {class: "row", style: "margin-bottom:8px"}, isSetup ? el("label", {class: "row", style: "font-weight:600"}, taken, "I took this trade") : null, outcome, star, el("span", {class: "spacer"}), msg, save),
+    notes, a.txt_file ? el("div", {class: "small", style: "margin-top:6px"}, "File: " + a.txt_file) : null);
+}
+
+function chartsPanel(a) {
+  const cs = (a.meta && a.meta.charts) || [];
+  if (!cs.length) return el("div", {class: "card small"}, "No charts are attached to this alert" + (Date.now() / 1000 - a.created_at < 120 ? " yet: they are still being drawn…" : "."));
+  const items = cs.map(c => ({src: withKey("/api/chart-files/" + encodeURIComponent(c.file)), caption: `${a.symbol} · ${TFN[c.tf] || c.tf} (as it looked when the alert fired)`}));
+  return el("div", {class: "card"}, el("h2", {}, "Charts (click to enlarge)"),
+    el("div", {class: "grid"}, ...cs.map((c, i) => el("figure", {}, el("img", {src: items[i].src, alt: TFN[c.tf] + " chart", loading: "lazy", onclick: () => SNR.lightbox(items, i)}), el("figcaption", {}, TFN[c.tf] || c.tf)))));
+}
+
+function rerender() {
+  const a = alertData;
+  document.title = a.subject;
+  const left = el("div", {class: "stack"}, controlsCard(a), ...sectionNodes(a).filter(Boolean));
+  const right = el("div", {class: "stack sticky"}, chartsPanel(a));
+  $("#page").replaceChildren(
+    el("div", {class: "row", style: "margin-bottom:10px"}, el("a", {href: "/ui"}, "← All alerts"), el("span", {class: "spacer"}),
+      el("span", {class: "chip type"}, KIND[a.kind] || a.kind), el("span", {class: "small"}, fmtTime(a.created_at))),
+    el("h1", {class: "title"}, a.subject),
+    a.meta && a.meta.limits && a.meta.limits.blocked ? el("div", {class: "banner", style: "border-radius:8px;margin:8px 0"}, "⛔ " + a.meta.limits.blocked) : null,
+    el("div", {class: "cols", style: "margin-top:12px"}, left, right));
+}
+
+async function load(first) {
+  try {
+    alertData = await api("/api/alerts/" + id);
+    status = await api("/api/story-status?symbol=" + encodeURIComponent(alertData.symbol || ""));
+    rerender();
+    const cs = alertData.meta && alertData.meta.charts;
+    if (first && !(cs && cs.length) && alertData.kind !== "feed" && Date.now() / 1000 - alertData.created_at < 120) poll();
+  } catch (e) { if (e.message !== "auth") $("#page").replaceChildren(el("div", {class: "empty err"}, e.status === 404 ? "This alert does not exist." : "Could not load: " + e.message), el("div", {class: "empty"}, el("a", {href: "/ui"}, "← All alerts"))); }
+}
+function poll() {      // charts are drawn a few seconds after the alert is created
+  const t = setInterval(async () => {
+    if (++retries > 12) return clearInterval(t);
+    const fresh = await api("/api/alerts/" + id);
+    if (fresh.meta && fresh.meta.charts && fresh.meta.charts.length) { alertData.meta = fresh.meta; clearInterval(t); rerender(); }
+  }, 5000);
+}
+load(true);
+</script>
+</body>
+</html>

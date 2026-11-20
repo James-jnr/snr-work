@@ -1,0 +1,155 @@
+📊 XAUUSD feed online: snapshot
+2026-11-20 09:42:29 UTC  (alert #32)
+
+XAUUSD   price 3582.45   Fri 20 Nov 12:00 EAT
+══════════════════════════════════════════════════════
+FEED ONLINE SNAPSHOT: the current picture from MT5.
+
+STORY LINES
+──────────────────────────────────────────────────────
+MONTHLY: no active story line
+
+WEEKLY – BULLISH since 11 Oct   [UNVERIFIED: tick it on the alert page]
+  Weekly rejected the Weekly support (OCL) at 4112.21 with a wick and closed
+  above it, and Daily gave a bullish breakout (QM) at 4169.30 in the same
+  candle.
+  Context: agrees with the Weekly story line; there is no higher story line
+  to compare with.
+  Renewed Weekly bullish story line (since 10 Oct): same direction.
+
+DAILY – BEARISH since 18 Nov   [UNVERIFIED: tick it on the alert page]
+  Daily rejected the Daily resistance (Classic A/V) at 3856.19 with a wick
+  and closed below it, and 4-hour gave a bearish breakout (QM) at 3851.46 in
+  the same candle.
+  Context: retracement of the Weekly story line (bullish). Trades from this
+  story line are retracement trades: targets stop at the parent's entry
+  zone.
+  Renewed Daily bearish story line (since 17 Nov): same direction.
+
+4-HOUR – BULLISH since 17 Nov   [UNVERIFIED: tick it on the alert page]
+  4-hour rejected the 4-hour support (Classic A/V) at 3837.09 with a wick
+  and closed above it, and 1-hour gave a bullish breakout (QM) at 3868.14 in
+  the following candle.
+  Context: retracement of the Daily story line (bearish). Trades from this
+  story line are retracement trades: targets stop at the parent's entry
+  zone.
+  This ended the previous 4-hour bearish story line (since 16 Nov).
+
+WHERE WE ARE NOW
+  Weekly is still bullish. It hit a Weekly resistance (QM) at 4147.62 and
+  closed below it, but there is no Daily breakout, so it remains bullish.
+  Daily remains bearish: price is moving with the story line.
+  4-hour remains bullish: price is moving with the story line. Next
+  obstacle: 1-hour resistance (Classic A/V) at 3672.71.
+  Weekly is bullish, but Daily is bearish, so the lower timeframes are
+  pulling back against the Weekly move: expect consolidation and prefer the
+  higher timeframe.
+
+KEY LEVELS (only the relevant, recent ones)
+──────────────────────────────────────────────────────
+Weekly story line (bullish) uses Daily levels:
+  Obstacle  Daily resistance (Classic A/V)       3859.19   strength 72/100
+
+Daily story line (bearish) uses 4-hour and 1-hour levels:
+  Key level 1-hour resistance (Classic A/V)      3672.71   strength 56/100   (newest)
+  Key level 4-hour resistance (OCL)              3735.67   strength 75/100   (newest)
+  Key level 4-hour resistance (QM)               3865.69   strength 77/100
+  Key level 1-hour resistance (QM)               3868.14   strength 65/100
+  Obstacle  1-hour support (Classic A/V)         3547.37   strength 67/100
+
+4-hour story line (bullish) uses 1-hour levels:
+  Key level 1-hour support (Classic A/V)         3547.37   strength 67/100
+  Key level 1-hour support (Classic A/V)         3533.41   strength 24/100   (newest)
+  Obstacle  1-hour resistance (Classic A/V)      3672.71   strength 56/100
+
+STRONG ZONES (timeframes overlapping):
+  4015.15 – 4016.16   resistance   Monthly + Weekly
+  4123.13 – 4123.89   resistance   Daily + 4-hour
+
+LIQUIDITY
+Previous day   high 3758.54   low 3658.77
+Previous week  high 4148.50   low 3852.42
+Asian range    high 3636.43   low 3514.45   (first two 4-hour candles)
+
+THESIS (the plan for this pair)
+──────────────────────────────────────────────────────
+  Dominant trend: Weekly bullish. Anchor: the Daily story line is bearish,
+  retracement of the Weekly story line (bullish). Continuation SELL at
+  3735.67 (waiting).
+
+  No material change since the previous thesis.
+
+IF PRICE GOES THERE: TWO SCENARIOS
+──────────────────────────────────────────────────────
+  Instead of predicting, wait for the trigger. If price goes to either
+  point, this is what we would look for. [x] = met now, [ ] = not yet, [~] =
+  timing note.
+
+SCENARIO A · SELL · Continuation: with the Daily story line (bearish)
+  Context      : retracement of the Weekly story line (bullish)
+  Where        : 3735.67  4-hour resistance (OCL)   (1532 pips above price)
+  Look for     :
+    [ ] Price reaches 4-hour resistance (OCL) at 3735.67
+    [ ] 4-hour rejects a 4-hour level in that zone (a wick into it, then a
+        close back below it)
+    [ ] 1-hour then breaks structure (QM) or an open-close level (OCL) down
+    [x] Outside Asia (the first two 4-hour candles)
+    [~] Inside the London or New York kill zone (best timing)
+    [x] Daily trade limit not reached
+  Cancel if    : a 1-hour candle closes above 3738.17
+  Targets      :
+    T1  3658.77  Previous day low  (~769 pips)
+          liquidity: expected to be swept because of the story line
+    T2  3514.45  Asian low  (~2212 pips)
+          liquidity: expected to be swept because of the story line
+  Status       : Waiting for price: 1532 pips above the current price.
+
+SCENARIO B · BUY · Reversal / retracement: against the Daily story line (bearish)
+  Waiting: no suitable key level / obstacle near price yet
+
+⏰ London and New York kill zones are the best entry times.
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+SETUPS
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+SETUP 1 · SELL · Daily story line: 4-hour entry, refine to 1-hour
+  Aligned with : Weekly bullish ✘  |  Daily bearish ✔  |  Monthly –  |  4-hour bullish ✘
+  Context      : retracement of the Weekly story line (bullish)
+  Entry zone   : 3672.71  1-hour resistance (Classic A/V)  (newest)
+  Invalid if   : a 1-hour candle closes above 3675.21
+  Enter by     : Sat 21 Nov 01:00 EAT
+  Stays valid  : until price reaches the retracement ceiling or the Weekly
+                 story line ends. This trade goes against the Weekly story
+                 line, so it is a retracement: take profit at the ceiling
+                 and do not hold beyond it unless the Weekly story line
+                 itself reverses
+  Targets:
+    T1  3658.77  Previous day low  (~139 pips)
+          liquidity: expected to be swept because of the story line
+    T2  3514.45  Asian low  (~1583 pips)
+          liquidity: expected to be swept because of the story line
+
+SETUP 2 · BUY · 4-hour story line: 1-hour entry
+  Late: the entry window has passed: wait for the next pullback or rejection
+  Aligned with : Weekly bullish ✔  |  Daily bearish ✘  |  Monthly –  |  4-hour bullish ✔
+  Context      : retracement of the Daily story line (bearish)
+  Entry zone   : 3547.37  1-hour support (Classic A/V)
+  Invalid if   : a 1-hour candle closes below 3544.87
+  Enter by     : Wed 18 Nov 01:00 EAT
+  Stays valid  : until price reaches the retracement ceiling (4-hour
+                 resistance (OCL) at 3735.67) or the Daily story line ends.
+                 This trade goes against the Daily story line, so it is a
+                 retracement: take profit at the ceiling and do not hold
+                 beyond it unless the Daily story line itself reverses
+  Ceiling      : 4-hour resistance (OCL) at 3735.67  (retracement: targets stop here)
+  Targets:
+    T1  3636.43  Asian high  (~891 pips)
+          liquidity: expected to be swept because of the story line
+    T2  3672.71  1-hour resistance (Classic A/V)  (~1253 pips)
+          roadblock: pay yourself here or move to break-even
+    T3  3735.67  4-hour resistance (OCL)  (~1883 pips)
+          roadblock: pay yourself here or move to break-even  (this is also the retracement ceiling of the Daily story line)
+
+SETUP 3 · Confirmation entry: 4-hour rejection, then 1-hour break
+  Waiting: no 4-hour rejection followed by a 1-hour break yet

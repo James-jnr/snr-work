@@ -1,0 +1,4 @@
+✅ AUDUSD: MT5 feed restored
+2026-11-20 09:42:24 UTC  (alert #30)
+
+Data is flowing again.

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNR Thesis</title>
+<link rel="stylesheet" href="/static/ui.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main>
+  <div class="small" style="margin-bottom:10px">The plan the system holds for each pair: the dominant trend, what we are waiting for, and how the plan changed over time. It is stored in the database and updated on every new candle.</div>
+  <div id="out"><div class="empty">loading…</div></div>
+</main>
+<script src="/static/ui.js"></script>
+<script>
+"use strict";
+const {$, el, api, fmtTime} = SNR;
+SNR.header("thesis");
+const NM = {MN1: "Monthly", W1: "Weekly", D1: "Daily", H4: "4-hour"};
+const STATUS = {"waiting": "Waiting for price", "zone reached": "Zone reached", "triggered": "TRIGGERED"};
+
+function card(sym, it) {
+  const t = it.current;
+  if (!t) return el("div", {class: "card"}, el("b", {}, sym), el("div", {class: "small"}, "No thesis stored yet."));
+  const px = (v) => v === null || v === undefined ? "–" : Number(v).toFixed(sym.includes("JPY") ? 3 : (t.price > 500 ? 2 : 5));
+  const chips = Object.entries(t.stories || {}).map(([tf, s]) => el("span", {class: "chip " + (s.dir === "bull" ? "buy" : "sell")}, NM[tf] + " " + (s.dir === "bull" ? "bullish" : "bearish")));
+  const scen = (t.scenarios || []).map(c => el("div", {class: "card setup " + c.dir, style: "box-shadow:none"},
+    el("b", {}, `Scenario ${c.id} · ${c.dir.toUpperCase()} · ${c.kind === "continuation" ? "Continuation" : "Reversal / retracement"}`),
+    el("div", {}, c.zone ? `${c.zone} at ${px(c.price)}` : "no suitable zone yet"),
+    el("div", {class: "small"}, c.context || ""),
+    el("div", {class: "row", style: "margin-top:4px"}, el("span", {class: "chip " + (c.status === "triggered" ? "buy" : "")}, STATUS[c.status] || c.status),
+      c.cancel ? el("span", {class: "small"}, "cancel if a 1-hour candle closes beyond " + px(c.cancel)) : null)));
+  const hist = (it.history || []).map(h => el("div", {style: "padding:8px 0;border-top:1px solid var(--line)"},
+    el("div", {class: "small"}, fmtTime(h.created_at)), ...h.changes.map(c => el("div", {}, "• " + c))));
+  return el("div", {class: "card", style: "margin-bottom:14px"},
+    el("div", {class: "row"}, el("h1", {class: "title", style: "margin:0"}, sym), ...chips, el("span", {class: "spacer"}),
+      el("span", {class: "small"}, "stored " + fmtTime(t.updated_at)),
+      it.latest_alert_id ? el("a", {href: "/alert/" + it.latest_alert_id}, "latest full alert →") : null),
+    el("p", {}, t.headline),
+    el("div", {class: "grid", style: "grid-template-columns:repeat(auto-fill,minmax(360px,1fr))"}, ...scen),
+    el("h2", {style: "margin-top:14px"}, "How the plan changed"), ...(hist.length ? hist : [el("div", {class: "small"}, "No changes recorded yet.")]));
+}
+async function load() {
+  try {
+    const d = await api("/api/thesis");
+    const syms = Object.keys(d.items);
+    $("#out").replaceChildren(...(syms.length ? syms.map(s => card(s, d.items[s])) : [el("div", {class: "empty"}, "No thesis yet. It appears after the first analysis of a pair.")]));
+  } catch (e) { if (e.message !== "auth") $("#out").replaceChildren(el("div", {class: "empty err"}, "Could not load: " + e.message)); }
+}
+window.addEventListener("snr-synced", load);
+load(); setInterval(() => { if (!document.hidden) load(); }, 20000);
+</script>
+</body>
+</html>
